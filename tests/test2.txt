@@ -1,0 +1,59 @@
+@Component({
+
+  selector: "app-root",
+  standalone: true,
+
+
+  styles: [
+    ``
+  ],
+  template: `
+    <div class="container">
+      <div id="left" class="detailsBox" *ngIf="selectedProduct">
+        <h2>{{ selectedProduct.name }}</h2>
+        <img [src]="selectedProduct.image">
+        <p>{{ selectedProduct.description }}</p>
+      </div>
+
+      <div id="right">
+        <div class="product" *ngFor="let product of products" (click)="showDetails(product)">
+          <img [src]="product.image">
+          <br>{{ product.name }}
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class AppComponent {
+
+  products:any;
+  selectedProduct:any;
+
+
+  constructor() {
+    this.products = [
+      {
+        name: 'Product 1',
+        image: 'https://images.pexels.com/photos/4012470/pexels-photo-4012470.jpeg',
+        description: 'This is the description for product 1.'
+      },
+      {
+        name: 'Product 2',
+        image: 'https://images.pexels.com/photos/3764550/pexels-photo-3764550.jpeg',
+        description: 'This is the description for product 2.'
+      },
+      {
+        name: 'Product 3',
+        image: 'https://images.pexels.com/photos/3845492/pexels-photo-3845492.jpeg',
+        description: 'This is the description for product 3.'
+      }
+    ];
+
+  }
+
+  showDetails(product: any) {
+    this.selectedProduct = product;
+
+  }
+
+}

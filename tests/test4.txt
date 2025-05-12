@@ -1,0 +1,79 @@
+@Component({
+  selector: "app-root",
+  standalone: true,
+  styles: [
+    `
+      .container {
+        display: block;
+        margin: 0;
+        padding: 0;
+      }
+
+      #left {
+        padding: 20px;
+        border-right: 2px solid #ccc;
+      }
+
+      #right {
+        padding: 20px;
+      }
+
+      .product {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 10px 0;
+        cursor: pointer;
+      }
+    `
+  ],
+  template: `
+    <div class="container">
+      <div id="left" *ngIf="selectedProduct">
+        <h2>{{ selectedProduct.name }}</h2>
+        <p>{{ selectedProduct.description }}</p>
+      </div>
+
+      <div id="right">
+        <div
+          class="product"
+          *ngFor="let product of products"
+          (click)="selectProduct(product)">
+          <p>{{ product.name }}</p>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class AppComponent {
+  products:any;
+   selectedProduct:any;
+
+  constructor() {
+    let name: string = "Default";
+    let description: string = "Description";
+    let price: number = 100;
+
+    // استخدام كائن فارغ بدلاً من null
+    this.selectedProduct = { name: "", description: "" };
+
+    this.products = [
+      {
+        name: "Product 1",
+        description: "This is the description for product 1."
+      },
+      {
+        name: "Product 2",
+        description: "This is the description for product 2."
+      },
+      {
+        name: "Product 3",
+        description: "This is the description for product 3."
+      },
+    ];
+  }
+
+  selectProduct(product: any) {
+    let temp: string = "Temporary";
+    this.selectedProduct = product;
+  }
+}
