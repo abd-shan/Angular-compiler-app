@@ -6,9 +6,9 @@ import java.util.Map;
 
 public class TypeScript {
 
-  public   Map<String, Type> attributes;
-  public   LinkedList<Method> methods = new LinkedList<>();
-  public   Constructor constructor;
+    public Map<String, Type> attributes;
+    public LinkedList<Method> methods;
+    public Constructor constructor;
 
 
     public TypeScript() {
@@ -44,6 +44,11 @@ public class TypeScript {
     public void setConstructor(Constructor constructor) {
         this.constructor = constructor;
     }
+
+    public void addMethod(Method method) {
+        methods.add(method);
+    }
+
 
     @Override
     public String toString() {

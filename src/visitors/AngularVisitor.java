@@ -5,11 +5,12 @@ import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
 import html.Html;
 import program.Program;
-import ts.TypeScript;
+import ts.*;
+import ts.Number;
 
 public class AngularVisitor extends AngularParserBaseVisitor {
     Program program;
-
+    String scope="";
 
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
@@ -18,10 +19,6 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         Css css = (Css) visitCssOption(ctx.cssOption());
         TypeScript ts = (TypeScript) visitTs(ctx.ts());
         Html html = (Html) visitHtmlOption(ctx.htmlOption());
-
-//        program.setCss(css);
-//        program.setHtml(html);
-//        program.setTypeScript(typeScript);
 
         program = new Program(html, css, ts);
 
@@ -97,17 +94,62 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitTs(AngularParser.TsContext ctx) {
-        return super.visitTs(ctx);
+        TypeScript typeScript = new TypeScript();
+
+        for (int i = 0; i < ctx.attribute().size(); i++) {
+            Attribute attribute = (Attribute) visit(ctx.attribute(i));
+            typeScript.addAttribute(attribute.getName(), attribute.getType());
+        }
+
+        if (ctx.constructor() != null) {
+            Constructor constructor = (Constructor) visit(ctx.constructor());
+            typeScript.setConstructor(constructor);
+        }
+        for (int i = 0; i < ctx.method().size(); i++) {
+            Method method = (Method) visit(ctx.method(i));
+            typeScript.addMethod(method);
+        }
+
+        return typeScript;
+
     }
 
     @Override
     public Object visitDeclareAttribute(AngularParser.DeclareAttributeContext ctx) {
-        return super.visitDeclareAttribute(ctx);
+        String name = ctx.ID().getText();
+        Type type;
+        if (ctx.type().NUMBER() != null) {
+            type = new Number();
+        } else if (ctx.type().BOOLEAN() != null) {
+            type = new Bool();
+        } else if (ctx.type().STRINGDL() != null) {
+            type = new Text();
+        } else {
+            type = null;
+        }
+        return new Attribute(name, type);
     }
 
     @Override
     public Object visitDeclareAndAssignAttribute(AngularParser.DeclareAndAssignAttributeContext ctx) {
-        return super.visitDeclareAndAssignAttribute(ctx);
+        String name = ctx.ID().getText();
+        Type type;
+        if (ctx.type().NUMBER() != null) {
+//            try {
+            type = (Number) visit(ctx.literal());
+//            } catch (ClassCastException e) {
+//                System.out.println("expected number, found something else");
+//                type = null;
+//            }
+        } else if (ctx.type().BOOLEAN() != null) {
+            type = (Bool) visit(ctx.literal());
+        } else if (ctx.type().STRINGDL() != null) {
+            type = (Text) visit(ctx.literal());
+        } else {
+            type = (Type) visit(ctx.literal());
+        }
+
+        return new Attribute(name, type);
     }
 
     @Override
@@ -157,17 +199,23 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitString(AngularParser.StringContext ctx) {
-        return super.visitString(ctx);
+        return new Text(ctx.getText());
     }
 
     @Override
     public Object visitNumber(AngularParser.NumberContext ctx) {
-        return super.visitNumber(ctx);
+        return new Number(Integer.parseInt(ctx.getText()));
     }
 
     @Override
     public Object visitBoolean(AngularParser.BooleanContext ctx) {
-        return super.visitBoolean(ctx);
+        Bool bool;
+        if (ctx.TRUE() != null) {
+            bool = new Bool(true);
+        } else {
+            bool = new Bool(false);
+        }
+        return bool;
     }
 
     @Override

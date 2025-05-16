@@ -24,7 +24,8 @@ htmlOption: TEMPLATE COLON BACKTICK html BACKTICK;
   ts: (attribute | method)* constructor? (attribute | method)* ;
 
 
-  attribute : ID COLON type SEMICOLON                       #DeclareAttribute
+  attribute :
+             ID COLON type SEMICOLON                        #DeclareAttribute
             |ID COLON type EQUAL_SIGN literal SEMICOLON     #DeclareAndAssignAttribute
   ;
 

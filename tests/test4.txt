@@ -46,34 +46,7 @@
 })
 export class AppComponent {
   products:any;
-   selectedProduct:any;
+  selectedProduct:number ="5";
 
-  constructor() {
-    let name: string = "Default";
-    let description: string = "Description";
-    let price: number = 100;
 
-    // استخدام كائن فارغ بدلاً من null
-    this.selectedProduct = { name: "", description: "" };
-
-    this.products = [
-      {
-        name: "Product 1",
-        description: "This is the description for product 1."
-      },
-      {
-        name: "Product 2",
-        description: "This is the description for product 2."
-      },
-      {
-        name: "Product 3",
-        description: "This is the description for product 3."
-      },
-    ];
-  }
-
-  selectProduct(product: any) {
-    let temp: string = "Temporary";
-    this.selectedProduct = product;
-  }
 }

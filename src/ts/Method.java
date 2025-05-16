@@ -1,10 +1,6 @@
 package ts;
 
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.Map;
-
-public class Method extends Constructor{
+public class Method extends Constructor {
 
     String name;
 

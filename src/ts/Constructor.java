@@ -8,9 +8,9 @@ public class Constructor {
     Map<String,Type> variables;
 
 
-//    public Constructor(Map<String,Type> variables) {
-//        this.variables = variables;
-//    }
+    public Constructor(Map<String,Type> variables) {
+        this.variables = variables;
+    }
 
     public Constructor() {
         this.variables = new HashMap<>();

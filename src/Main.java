@@ -1,40 +1,34 @@
-//import gen.AngularParser;
-//import org.antlr.v4.runtime.CharStream;
-//import org.antlr.v4.runtime.CommonTokenStream;
-//import org.antlr.v4.runtime.tree.ParseTree;
-//import program.Program;
-//import ts.Method;
-//import visitors.AngularVisitor;
-//
-//import java.io.IOException;
-//import java.util.ArrayList;
-//import java.util.LinkedList;
-//import java.util.Map;
-//
-//import static org.antlr.v4.runtime.CharStreams.fromFileName;
-//
+import gen.AngularLexer;
+import gen.AngularParser;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import program.Program;
+import visitors.AngularVisitor;
+
+import java.io.IOException;
+
+import static org.antlr.v4.runtime.CharStreams.fromFileName;
+
 public class Main {
     public static void main(String[] args)
-//            throws IOException
-    {
-//
-//        String source = "tests/test1.txt";
-//        CharStream cs = fromFileName(source);
-//        AngularLexer lexer = new AngularLexer(cs);
-//        CommonTokenStream token = new CommonTokenStream(lexer);
-//        AngularParser parser = new AngularParser(token);
-//        ParseTree tree = parser.program();
-//
-//        Program program = (Program) new AngularVisitor().visit(tree);
-//
-//        System.out.println(program);
-//
+            throws IOException {
+
+        String source = "tests/test4.txt";
+        CharStream cs = fromFileName(source);
+        AngularLexer lexer = new AngularLexer(cs);
+        CommonTokenStream token = new CommonTokenStream(lexer);
+        AngularParser parser = new AngularParser(token);
+        ParseTree tree = parser.program();
+
+        Program program = (Program) new AngularVisitor().visit(tree);
+
+        System.out.println(program);
+
 //        System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
-//
-//
-//        System.out.println(symbolTable(program));
-//
-//
+
+
+
     }
 //
 //
