@@ -22,7 +22,6 @@ public class Method extends Constructor {
     public String toString() {
         return "Method{" +
                 "name='" + name + '\'' +
-                ", variables=" + variables +
                 '}';
     }
 }

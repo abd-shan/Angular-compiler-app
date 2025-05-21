@@ -46,7 +46,7 @@
 })
 export class AppComponent {
   products:any;
-  selectedProduct:number ="5";
+  selectedProduct:string ="5";
 
 
 }

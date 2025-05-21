@@ -1,14 +1,14 @@
 package ts.expressions;
 
-import ts.types.Type;
+import ts.Kind;
 
 public class Attribute extends Expression {
     private String name;
-    private Type type;
+    private Kind kind;
 
-    public Attribute(String name, Type type) {
+    public Attribute(String name, Kind kind) {
         this.name = name;
-        this.type = type;
+        this.kind = kind;
     }
 
     public String getName() {
@@ -19,19 +19,19 @@ public class Attribute extends Expression {
         this.name = name;
     }
 
-    public Type getType() {
-        return type;
+    public Kind getKind() {
+        return kind;
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public void setKind(Kind kind) {
+        this.kind = kind;
     }
 
     @Override
     public String toString() {
         return "Attribute{" +
                 "name='" + name + '\'' +
-                ", type='" + type + '\'' +
+                ", kind=" + kind +
                 '}';
     }
 }

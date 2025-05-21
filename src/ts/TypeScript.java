@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class TypeScript {
 
-    public Map<String, Type> attributes;
+    public Map<String, Kind> attributes;
     public LinkedList<Method> methods;
     public Constructor constructor;
 
@@ -19,16 +19,16 @@ public class TypeScript {
         methods = new LinkedList<>();
     }
 
-    public Map<String, Type> getAttributes() {
+    public Map<String, Kind> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Type> attributes) {
+    public void setAttributes(Map<String, Kind> attributes) {
         this.attributes = attributes;
     }
 
-    public void addAttribute(String name, Type type) {
-        attributes.put(name, type);
+    public void addAttribute(String name, Kind kind) {
+        attributes.put(name, kind);
     }
 
     public LinkedList<Method> getMethods() {

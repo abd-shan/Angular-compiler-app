@@ -17,7 +17,7 @@ import ts.types.Type;
 public class AngularVisitor extends AngularParserBaseVisitor {
     Program program;
     String scope = "";
-    SymbolTable symbolTable = new SymbolTable();
+  public   SymbolTable symbolTable = new SymbolTable();
 
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
@@ -105,16 +105,16 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
         for (int i = 0; i < ctx.attribute().size(); i++) {
             Attribute attribute = (Attribute) visit(ctx.attribute(i));
-            typeScript.addAttribute(attribute.getName(), attribute.getType());
+            typeScript.addAttribute(attribute.getName(), attribute.getKind());
         }
 
         if (ctx.constructor() != null) {
-            Constructor constructor = (Constructor) visit(ctx.constructor());
-            typeScript.setConstructor(constructor);
+//            Constructor constructor = (Constructor) visit(ctx.constructor());
+//            typeScript.setConstructor(constructor);
         }
         for (int i = 0; i < ctx.method().size(); i++) {
-            Method method = (Method) visit(ctx.method(i));
-            typeScript.addMethod(method);
+//            Method method = (Method) visit(ctx.method(i));
+//            typeScript.addMethod(method);
         }
 
         return typeScript;
@@ -124,39 +124,56 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     @Override
     public Object visitDeclareAttribute(AngularParser.DeclareAttributeContext ctx) {
         String name = ctx.ID().getText();
-        Type type;
+        Kind kind;
         if (ctx.type().NUMBER() != null) {
-            type = new Number();
+            kind = Kind.number;
         } else if (ctx.type().BOOLEAN() != null) {
-            type = new Bool();
+            kind = Kind.bool;
         } else if (ctx.type().STRINGDL() != null) {
-            type = new Text();
+            kind = Kind.string;
         } else {
-            type = null;
+            kind = Kind.any;
         }
-        return new Attribute(name, type);
+        Symbol symbol = symbolTable.findSymbol(name, scope);
+        if (symbol == null)
+            symbolTable.addSymbol(name, kind, scope);
+        else {
+            // error attribute already declared
+            System.out.println("Error: Symbol " + name + " already exists");
+            System.exit(1);
+        }
+        return new Attribute(name, kind);
     }
 
     @Override
     public Object visitDeclareAndAssignAttribute(AngularParser.DeclareAndAssignAttributeContext ctx) {
         String name = ctx.ID().getText();
+        Kind kind;
         Type type;
         if (ctx.type().NUMBER() != null) {
-//            try {
+            kind = Kind.number;
             type = (Number) visit(ctx.literal());
-//            } catch (ClassCastException e) {
-//                System.out.println("expected number, found something else");
-//                type = null;
-//            }
         } else if (ctx.type().BOOLEAN() != null) {
+            kind = Kind.bool;
             type = (Bool) visit(ctx.literal());
         } else if (ctx.type().STRINGDL() != null) {
+            kind = Kind.string;
             type = (Text) visit(ctx.literal());
         } else {
+            kind = Kind.any;
             type = (Type) visit(ctx.literal());
         }
 
-        return new Attribute(name, type);
+        Symbol symbol = symbolTable.findSymbol(name, scope);
+        if (symbol == null)
+            symbolTable.addSymbol(name, kind, type, scope);
+        else {
+            // error attribute already declared
+            System.out.println("Error: Symbol " + name + " already exists");
+            System.exit(1);
+        }
+
+        return new Attribute(name, kind);
     }
 
     @Override
@@ -172,7 +189,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         } else
             type = null;
 
-        return new Variable(name, type);
+//        return new Variable(name, type);
+        return null;
     }
 
     @Override
@@ -193,19 +211,21 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         } else {
             type = (Type) visit(ctx.literal());
         }
-        return new Variable(name, type);
+//        return new Variable(name, type);
+        return null;
     }
 
     @Override
     public Object visitAssignVariable(AngularParser.AssignVariableContext ctx) {
-
+        return null;
     }
 
     @Override
     public Object visitAssignAttribute(AngularParser.AssignAttributeContext ctx) {
         String name = ctx.ID().getText();
         Type type = (Type) visit(ctx.literal());
-        return new Attribute(name, type);
+//        return new Attribute(name, type);
+        return null;
     }
 
     @Override
