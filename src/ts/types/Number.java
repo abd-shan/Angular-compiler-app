@@ -1,17 +1,17 @@
 package ts.types;
 
-public class Number extends Type{
+public class Number extends Type {
     int number;
 
     public Number() {
         this.number = 0;
     }
 
-    public Number(int number ) {
+    public Number(int number) {
         this.number = number;
     }
 
     public String toString() {
-        return "number: "+Integer.toString(number)+"\n";
+        return Integer.toString(number);
     }
 }

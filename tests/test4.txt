@@ -48,5 +48,13 @@ export class AppComponent {
   products:any;
   selectedProduct:string ="5";
 
+  constructor(){
+  let a :number = 5;
+  let b :number = 12;
+//  b = a;
+
+  this.products = b;
+  }
+
 
 }

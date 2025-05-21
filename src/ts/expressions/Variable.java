@@ -22,9 +22,6 @@ public class Variable extends Expression {
 
     @Override
     public String toString() {
-        return "Variable{" +
-                "name='" + name + '\'' +
-                ", kind=" + kind +
-                '}';
+        return name+":"+kind +" ";
     }
 }

@@ -20,6 +20,6 @@ public class Text extends Type{
     }
 
     public String toString() {
-        return " string:"+Text;
+        return Text;
     }
 }

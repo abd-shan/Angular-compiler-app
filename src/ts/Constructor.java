@@ -18,8 +18,6 @@ public class Constructor {
 
     @Override
     public String toString() {
-        return "\n" +
-                "expressions:\n" + expressions +
-                '}';
+        return expressions.toString();
     }
 }

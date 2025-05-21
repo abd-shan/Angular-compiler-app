@@ -17,7 +17,7 @@ import ts.types.Type;
 public class AngularVisitor extends AngularParserBaseVisitor {
     Program program;
     String scope = "";
-  public   SymbolTable symbolTable = new SymbolTable();
+    public SymbolTable symbolTable = new SymbolTable();
 
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
@@ -105,12 +105,12 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
         for (int i = 0; i < ctx.attribute().size(); i++) {
             Attribute attribute = (Attribute) visit(ctx.attribute(i));
-            typeScript.addAttribute(attribute.getName(), attribute.getKind());
+            typeScript.addAttribute(attribute);
         }
 
         if (ctx.constructor() != null) {
-//            Constructor constructor = (Constructor) visit(ctx.constructor());
-//            typeScript.setConstructor(constructor);
+            Constructor constructor = (Constructor) visit(ctx.constructor());
+            typeScript.setConstructor(constructor);
         }
         for (int i = 0; i < ctx.method().size(); i++) {
 //            Method method = (Method) visit(ctx.method(i));
@@ -135,8 +135,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
             kind = Kind.any;
         }
         Symbol symbol = symbolTable.findSymbol(name, scope);
-        if (symbol == null)
-            symbolTable.addSymbol(name, kind, scope);
+        if (symbol == null) symbolTable.addSymbol(name, kind, scope);
         else {
             // error attribute already declared
             System.out.println("Error: Symbol " + name + " already exists");
@@ -165,8 +164,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         }
 
         Symbol symbol = symbolTable.findSymbol(name, scope);
-        if (symbol == null)
-            symbolTable.addSymbol(name, kind, type, scope);
+        if (symbol == null) symbolTable.addSymbol(name, kind, type, scope);
         else {
             // error attribute already declared
             System.out.println("Error: Symbol " + name + " already exists");
@@ -174,68 +172,6 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         }
 
         return new Attribute(name, kind);
-    }
-
-    @Override
-    public Object visitDeclareVariable(AngularParser.DeclareVariableContext ctx) {
-        String name = ctx.ID().getText();
-        Type type;
-        if (ctx.type().NUMBER() != null) {
-            type = new Number();
-        } else if (ctx.type().BOOLEAN() != null) {
-            type = new Bool();
-        } else if (ctx.type().STRINGDL() != null) {
-            type = new Text();
-        } else
-            type = null;
-
-//        return new Variable(name, type);
-        return null;
-    }
-
-    @Override
-    public Object visitDeclareAndAssign(AngularParser.DeclareAndAssignContext ctx) {
-        String name = ctx.ID().getText();
-        Type type;
-        if (ctx.type().NUMBER() != null) {
-//            try {
-            type = (Number) visit(ctx.literal());
-//            } catch (ClassCastException e) {
-//                System.out.println("expected number, found something else");
-//                type = null;
-//            }
-        } else if (ctx.type().BOOLEAN() != null) {
-            type = (Bool) visit(ctx.literal());
-        } else if (ctx.type().STRINGDL() != null) {
-            type = (Text) visit(ctx.literal());
-        } else {
-            type = (Type) visit(ctx.literal());
-        }
-//        return new Variable(name, type);
-        return null;
-    }
-
-    @Override
-    public Object visitAssignVariable(AngularParser.AssignVariableContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitAssignAttribute(AngularParser.AssignAttributeContext ctx) {
-        String name = ctx.ID().getText();
-        Type type = (Type) visit(ctx.literal());
-//        return new Attribute(name, type);
-        return null;
-    }
-
-    @Override
-    public Object visitIf(AngularParser.IfContext ctx) {
-        return super.visitIf(ctx);
-    }
-
-    @Override
-    public Object visitFor(AngularParser.ForContext ctx) {
-        return super.visitFor(ctx);
     }
 
     @Override
@@ -253,13 +189,119 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     }
 
     @Override
-    public Object visitType(AngularParser.TypeContext ctx) {
-        return super.visitType(ctx);
+    public Object visitDeclareVariable(AngularParser.DeclareVariableContext ctx) {
+        String name = ctx.ID().getText();
+        Kind kind;
+        if (ctx.type().NUMBER() != null) {
+            kind = Kind.number;
+        } else if (ctx.type().BOOLEAN() != null) {
+            kind = Kind.bool;
+        } else if (ctx.type().STRINGDL() != null) {
+            kind = Kind.string;
+        } else kind = Kind.any;
+
+        Symbol symbol = symbolTable.findSymbol(name, scope);
+        if (symbol == null)
+            symbolTable.addSymbol(name, kind, scope);
+        else {
+            // error variable already declared in this scope
+            System.out.println("Error: Symbol " + name + " already exists");
+            System.exit(1);
+        }
+
+
+        return new Variable(name, kind);
+    }
+
+    @Override
+    public Object visitDeclareAndAssign(AngularParser.DeclareAndAssignContext ctx) {
+        String name = ctx.ID().getText();
+        Kind kind;
+        Type type;
+        if (ctx.type().NUMBER() != null) {
+//            try {
+            kind = Kind.number;
+            type = (Number) visit(ctx.literal());
+//            } catch (ClassCastException e) {
+//                System.out.println("expected number, found something else");
+//                type = null;
+//            }
+        } else if (ctx.type().BOOLEAN() != null) {
+            kind = Kind.bool;
+            type = (Bool) visit(ctx.literal());
+        } else if (ctx.type().STRINGDL() != null) {
+            kind = Kind.string;
+            type = (Text) visit(ctx.literal());
+        } else {
+            kind = Kind.any;
+            type = (Type) visit(ctx.literal());
+        }
+
+        Symbol symbol = symbolTable.findSymbol(name, scope);
+        if (symbol == null)
+            symbolTable.addSymbol(name, kind, type, scope);
+        else {
+            // error variable already declared in this scope
+            System.out.println("Error: Symbol " + name + " already exists");
+            System.exit(1);
+        }
+        return new Variable(name, kind);
+    }
+
+    @Override
+    public Object visitAssignVariable(AngularParser.AssignVariableContext ctx) {
+        String name = ctx.ID().getText();
+        Symbol symbol = symbolTable.findSymbol(name, scope);
+        if (symbol == null) {
+            System.out.println("Error: Symbol " + name + " not found");
+            System.exit(1);
+        }
+        Kind kind = symbol.getKind();
+        Type type;
+        if (kind == Kind.number) {
+            type = (Number) visit(ctx.literal());
+        } else if (kind == Kind.bool) {
+            type = (Bool) visit(ctx.literal());
+        } else if (kind == Kind.string) {
+            type = (Text) visit(ctx.literal());
+        } else
+            type = (Type) visit(ctx.literal());
+
+        symbol.setType(type);
+
+        return new Variable(name, kind);
+    }
+
+    @Override
+    public Object visitAssignAttribute(AngularParser.AssignAttributeContext ctx) {
+        String name = ctx.ID().getText();
+
+        Symbol symbol = symbolTable.findSymbol(name, scope);
+        if (symbol == null) {
+            System.out.println("Error: Symbol " + name + " not found");
+            System.exit(1);
+        }
+        Kind kind = symbol.getKind();
+        Type type;
+        if (kind == Kind.number) {
+            type = (Number) visit(ctx.literal());
+        } else if (kind == Kind.bool) {
+            type = (Bool) visit(ctx.literal());
+        } else if (kind == Kind.string) {
+            type = (Text) visit(ctx.literal());
+        } else
+            type = (Type) visit(ctx.literal());
+
+        symbol.setType(type);
+
+        return null;
     }
 
     @Override
     public Object visitStoredID(AngularParser.StoredIDContext ctx) {
-        return super.visitStoredID(ctx);
+        String name = ctx.ID().getText();
+        Symbol symbol = symbolTable.findSymbol(name, scope);
+        return symbol.getType();
     }
 
     @Override
@@ -282,6 +324,17 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         }
         return bool;
     }
+
+    @Override
+    public Object visitIf(AngularParser.IfContext ctx) {
+        return super.visitIf(ctx);
+    }
+
+    @Override
+    public Object visitFor(AngularParser.ForContext ctx) {
+        return super.visitFor(ctx);
+    }
+
 
     @Override
     public Object visitKeyValue(AngularParser.KeyValueContext ctx) {

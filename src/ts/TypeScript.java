@@ -1,34 +1,28 @@
 package ts;
 
+import ts.expressions.Attribute;
 import ts.types.Type;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
 public class TypeScript {
 
-    public Map<String, Kind> attributes;
+    public ArrayList<Attribute> attributes;
     public LinkedList<Method> methods;
     public Constructor constructor;
 
 
     public TypeScript() {
         constructor = new Constructor();
-        attributes = new HashMap<>();
+        attributes = new ArrayList<>();
         methods = new LinkedList<>();
     }
 
-    public Map<String, Kind> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Kind> attributes) {
-        this.attributes = attributes;
-    }
-
-    public void addAttribute(String name, Kind kind) {
-        attributes.put(name, kind);
+    public void addAttribute(Attribute attribute) {
+        attributes.add(attribute);
     }
 
     public LinkedList<Method> getMethods() {

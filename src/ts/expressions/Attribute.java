@@ -29,9 +29,6 @@ public class Attribute extends Expression {
 
     @Override
     public String toString() {
-        return "Attribute{" +
-                "name='" + name + '\'' +
-                ", kind=" + kind +
-                '}';
+        return name+":"+kind +" ";
     }
 }

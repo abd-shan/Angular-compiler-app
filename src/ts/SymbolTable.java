@@ -24,15 +24,43 @@ public class SymbolTable {
         symbols.add(symbol);
     }
 
+//    public Symbol findSymbol(String symbolName, String scope) {
+//        for (int i = symbols.size() - 1; i >= 0; i--) {
+//            Symbol symbol = symbols.get(i);
+//            if (symbol.name.equals(symbolName) && symbol.scope.equals(scope)) {
+//                return symbol;
+//            }
+//        }
+//        return null;
+//    }
+
     public Symbol findSymbol(String symbolName, String scope) {
+        while (scope != null && !scope.isEmpty()) {
+            for (int i = symbols.size() - 1; i >= 0; i--) {
+                Symbol symbol = symbols.get(i);
+                if (symbol.name.equals(symbolName) && symbol.scope.equals(scope)) {
+                    return symbol;
+                }
+            }
+
+            // Step up to parent scope by removing the last scope segment
+            int lastDot = scope.lastIndexOf('.');
+            if (lastDot == -1) {
+                scope = ""; // fallback to root/global scope
+            } else {
+                scope = scope.substring(0, lastDot);
+            }
+        }
         for (int i = symbols.size() - 1; i >= 0; i--) {
             Symbol symbol = symbols.get(i);
             if (symbol.name.equals(symbolName) && symbol.scope.equals(scope)) {
                 return symbol;
             }
         }
+
         return null;
     }
+
 
 
 
