@@ -1,10 +1,12 @@
-package ts;
+package ts.expressions;
 
-public class Attribute {
+import ts.types.Type;
+
+public class Variable extends Expression {
     private String name;
     private Type type;
 
-    public Attribute(String name, Type type) {
+    public Variable(String name, Type type) {
         this.name = name;
         this.type = type;
     }
@@ -27,9 +29,9 @@ public class Attribute {
 
     @Override
     public String toString() {
-        return "Attribute{" +
+        return "Variable{" +
                 "name='" + name + '\'' +
-                ", type='" + type + '\'' +
+                ", type=" + type +
                 '}';
     }
 }

@@ -1,4 +1,4 @@
-package ts;
+package ts.types;
 
 import java.util.ArrayList;
 

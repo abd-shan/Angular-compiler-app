@@ -1,21 +1,21 @@
 package ts;
 
-import java.util.HashMap;
-import java.util.Map;
+import ts.expressions.Expression;
+import ts.types.Type;
+
+import java.util.ArrayList;
+
+
+
 
 public class SymbolTable {
 
-    Map<String, Variable> variables;
-
-    public SymbolTable() {
-        variables = new HashMap<String, Variable>();
+    private class Symbol{
+        String name;
+        Type type;
+        String scope;
     }
 
-    public Map<String, Variable> getVariables() {
-        return variables;
-    }
+ArrayList<Symbol> symbols;
 
-    public void setVariables(Map<String, Variable> variables) {
-        this.variables = variables;
-    }
 }

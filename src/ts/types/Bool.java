@@ -1,4 +1,4 @@
-package ts;
+package ts.types;
 
 public class Bool extends Type {
     private boolean value;

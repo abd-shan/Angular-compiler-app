@@ -1,11 +1,12 @@
-package ts;
+package ts.expressions;
 
-public class Variable {
+import ts.types.Type;
+
+public class Attribute extends Expression {
     private String name;
     private Type type;
-    private String scope;
 
-    public Variable(String name, Type type) {
+    public Attribute(String name, Type type) {
         this.name = name;
         this.type = type;
     }
@@ -26,19 +27,11 @@ public class Variable {
         this.type = type;
     }
 
-    public String getScope() {
-        return scope;
-    }
-
-    public void setScope(String scope) {
-        this.scope = scope;
-    }
-
     @Override
     public String toString() {
-        return "Variable{" +
+        return "Attribute{" +
                 "name='" + name + '\'' +
-                ", type=" + type +
+                ", type='" + type + '\'' +
                 '}';
     }
 }

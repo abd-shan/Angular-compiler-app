@@ -1,37 +1,25 @@
 package ts;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import ts.expressions.Expression;
+
+import java.util.ArrayList;
 
 public class Constructor {
-    Map<String,Type> variables;
 
-
-    public Constructor(Map<String,Type> variables) {
-        this.variables = variables;
-    }
+    ArrayList<Expression> expressions;
 
     public Constructor() {
-        this.variables = new HashMap<>();
+        expressions = new ArrayList<>();
     }
 
-    public Map<String,Type> getVariables() {
-        return variables;
-    }
-
-    public void setVariables(Map<String,Type> variables) {
-        this.variables = variables;
-    }
-
-    public void addVariable(String name, Type type) {
-        this.variables.put(name, type);
+    public void addExpression(Expression e) {
+        expressions.add(e);
     }
 
     @Override
     public String toString() {
         return "\n" +
-                "variables:\n" + variables +
+                "expressions:\n" + expressions +
                 '}';
     }
 }

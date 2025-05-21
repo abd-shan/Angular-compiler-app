@@ -1,4 +1,4 @@
-package ts;
+package ts.types;
 
 public class Text extends Type{
     private String Text;

@@ -1,4 +1,4 @@
-package ts;
+package ts.types;
 
 public class Number extends Type{
     int number;

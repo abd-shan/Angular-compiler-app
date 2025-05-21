@@ -1,5 +1,7 @@
 package ts;
 
+import ts.types.Type;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
