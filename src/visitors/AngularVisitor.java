@@ -9,10 +9,8 @@ import ts.*;
 import ts.expressions.Attribute;
 import ts.expressions.Expression;
 import ts.expressions.Variable;
-import ts.types.Bool;
+import ts.types.*;
 import ts.types.Number;
-import ts.types.Text;
-import ts.types.Type;
 
 public class AngularVisitor extends AngularParserBaseVisitor {
     Program program;
@@ -338,12 +336,21 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitKeyValue(AngularParser.KeyValueContext ctx) {
-        return super.visitKeyValue(ctx);
+        KeyValuePair keyValuePair = new KeyValuePair();
+
+        for (int i = 0; i < ctx.ID().size(); i++) {
+            keyValuePair.addToKeyValue(ctx.ID(i).getText(), ctx.STRING(i).getText());
+        }
+        return keyValuePair;
     }
 
     @Override
     public Object visitArray(AngularParser.ArrayContext ctx) {
-        return super.visitArray(ctx);
+        Array array = new Array();
+        for (int i = 0; i <ctx.literal().size(); i++) {
+            array.add((Type) visit(ctx.literal(i)));
+        }
+        return array;
     }
 
     @Override

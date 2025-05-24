@@ -11,6 +11,8 @@ import java.io.IOException;
 import static org.antlr.v4.runtime.CharStreams.fromFileName;
 
 public class Main {
+
+   public static AngularVisitor visitor;
     public static void main(String[] args) throws IOException {
 
         String source = "tests/test4.txt";
@@ -20,7 +22,7 @@ public class Main {
         AngularParser parser = new AngularParser(token);
         ParseTree tree = parser.program();
 
-        AngularVisitor visitor = new AngularVisitor();
+        visitor = new AngularVisitor();
         Program program = (Program) visitor.visit(tree);
 
         System.out.println(program);

@@ -51,7 +51,7 @@ htmlOption: TEMPLATE COLON BACKTICK html BACKTICK;
       | NUMERIC_VALUE                                               #Number
       | (TRUE | FALSE)                                              #Boolean
       | LBRACE (ID COLON STRING (COMMA ID COLON STRING)*)? RBRACE   #KeyValue
-      | LBRACKET (literal COMMA)* literal RBRACKET                  #Array
+      | LBRACKET ((literal COMMA)* literal)? RBRACKET                  #Array
       ;
 
 

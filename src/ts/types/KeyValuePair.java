@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class KeyValuePair extends Type {
 
-    Map<String , String> keyValue;
+    Map<String, String> keyValue;
 
     public KeyValuePair(Map<String, String> keyValue) {
         this.keyValue = keyValue;
@@ -26,11 +26,10 @@ public class KeyValuePair extends Type {
     public void setKeyValue(Map<String, String> keyValue) {
         this.keyValue = keyValue;
     }
+
     @Override
     public String toString() {
-        return "{" +
-                  keyValue+
-                "}\n";
+        return keyValue.toString();
     }
 
 }
