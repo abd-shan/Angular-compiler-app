@@ -45,55 +45,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     }
 
 
-    @Override
-    public Object visitHtml(AngularParser.HtmlContext ctx) {
-        return super.visitHtml(ctx);
-    }
 
-    @Override
-    public Object visitDiv(AngularParser.DivContext ctx) {
-        return super.visitDiv(ctx);
-    }
 
-    @Override
-    public Object visitParagragh(AngularParser.ParagraghContext ctx) {
-        return super.visitParagragh(ctx);
-    }
-
-    @Override
-    public Object visitH2Element(AngularParser.H2ElementContext ctx) {
-        return super.visitH2Element(ctx);
-    }
-
-    @Override
-    public Object visitPElement(AngularParser.PElementContext ctx) {
-        return super.visitPElement(ctx);
-    }
-
-    @Override
-    public Object visitImg(AngularParser.ImgContext ctx) {
-        return super.visitImg(ctx);
-    }
-
-    @Override
-    public Object visitBr(AngularParser.BrContext ctx) {
-        return super.visitBr(ctx);
-    }
-
-    @Override
-    public Object visitClassid(AngularParser.ClassidContext ctx) {
-        return super.visitClassid(ctx);
-    }
-
-    @Override
-    public Object visitNg(AngularParser.NgContext ctx) {
-        return super.visitNg(ctx);
-    }
-
-    @Override
-    public Object visitEvent(AngularParser.EventContext ctx) {
-        return super.visitEvent(ctx);
-    }
 //>>>>>>>>>>>>>>>>>>>>>>
 //    <<<<<<<<<<<<<<<<<<<< Typescript
 

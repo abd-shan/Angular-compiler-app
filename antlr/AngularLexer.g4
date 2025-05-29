@@ -89,7 +89,7 @@ ANGULAR_PROPERTY  : '[' ID ']';                 // [src]
 ANGULAR_BINDING   : '{{' .*? '}}';              // {{ selectedProduct.name }}
 
 //Html
-H2 : 'h2';
+
 P : 'p';
 TAG_OPEN : '<';
 TAG_CLOSE : '>';

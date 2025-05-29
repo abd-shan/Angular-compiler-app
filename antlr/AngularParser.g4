@@ -66,33 +66,53 @@ htmlOption: TEMPLATE COLON BACKTICK html BACKTICK;
 
 // <<<<<    html parser
 
+html
+    : div;
 
-html: div;
+div
+    : TAG_OPEN ID divAttribute* TAG_CLOSE
+      divChild*
+      TAG_OPEN_SELF ID TAG_CLOSE        #DivElement
+    ;
 
-div:
-    TAG_OPEN ID (classid | ng | event)* TAG_CLOSE
-    (img | div | br | paragragh)*
-    TAG_OPEN_SELF ID TAG_CLOSE;
+divAttribute
+    : classid                            #ClassID
+    | ng                                 #NgDirective
+    | event                              #EventBinding
+    ;
 
-paragragh:
-    h2Element
-    | pElement;
+divChild
+    : img                                #Image
+    | div                                #NestedDiv
+    | br                                 #BrTag
+    | paragragh                          #Paragraph
+    ;
 
-h2Element:
-    TAG_OPEN H2 TAG_CLOSE ANGULAR_BINDING TAG_OPEN_SELF H2 TAG_CLOSE;
+paragragh
+    : hElement                           #H_Element
+    | pElement                           #P_Element
+    ;
 
-pElement:
-    TAG_OPEN P TAG_CLOSE ANGULAR_BINDING TAG_OPEN_SELF P TAG_CLOSE;
+hElement
+    : TAG_OPEN ID TAG_CLOSE ANGULAR_BINDING TAG_OPEN_SELF ID TAG_CLOSE;
 
-img: TAG_OPEN ID ANGULAR_ATTRIBUTE_PROPERTY TAG_CLOSE;
+pElement
+    : TAG_OPEN P TAG_CLOSE ANGULAR_BINDING TAG_OPEN_SELF P TAG_CLOSE;
 
-br: TAG_OPEN ID TAG_CLOSE ANGULAR_BINDING;
+img
+    : TAG_OPEN ID ANGULAR_ATTRIBUTE_PROPERTY TAG_CLOSE;
 
-classid: ATTRIBUTE;
+br
+    : TAG_OPEN ID TAG_CLOSE ANGULAR_BINDING;
 
-ng: ANGULAR_ATTRIBUTE_DIRECTIVE;
+classid
+    : ATTRIBUTE;
 
-event: ANGULAR_ATTRIBUTE_EVENT;
+ng
+    : ANGULAR_ATTRIBUTE_DIRECTIVE;
+
+event
+    : ANGULAR_ATTRIBUTE_EVENT;
 
 // <<<<<<<<<<<<< css parser
 
