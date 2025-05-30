@@ -15,4 +15,21 @@ public class DivElement extends Div{
         this.attributes = attributes;
         this.children = children;
     }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return "DivElement{" +
+                "id='" + id + '\'' +
+                ", attributes=" + attributes +
+                ", children=" + children +
+                '}';
+    }
 }

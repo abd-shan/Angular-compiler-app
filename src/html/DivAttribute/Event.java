@@ -17,6 +17,8 @@ public class Event extends DivAttribute{
 
     @Override
     public String toString() {
-        return super.toString();
+        return "Event{" +
+                "event='" + event + '\'' +
+                '}';
     }
 }
