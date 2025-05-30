@@ -44,10 +44,61 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         return super.visitHtmlOption(ctx);
     }
 
+    @Override
+    public Object visitHtml(AngularParser.HtmlContext ctx) {
+        return super.visitHtml(ctx);
+    }
 
+    @Override
+    public Object visitDivElement(AngularParser.DivElementContext ctx) {
+        return super.visitDivElement(ctx);
+    }
 
+    @Override
+    public Object visitNgDirective(AngularParser.NgDirectiveContext ctx) {
+        return super.visitNgDirective(ctx);
+    }
 
-//>>>>>>>>>>>>>>>>>>>>>>
+    @Override
+    public Object visitEventBinding(AngularParser.EventBindingContext ctx) {
+        return super.visitEventBinding(ctx);
+    }
+
+    @Override
+    public Object visitClassId(AngularParser.ClassIdContext ctx) {
+        return super.visitClassId(ctx);
+    }
+
+    @Override
+    public Object visitImage(AngularParser.ImageContext ctx) {
+        return super.visitImage(ctx);
+    }
+
+    @Override
+    public Object visitNestedDiv(AngularParser.NestedDivContext ctx) {
+        return super.visitNestedDiv(ctx);
+    }
+
+    @Override
+    public Object visitBrTag(AngularParser.BrTagContext ctx) {
+        return super.visitBrTag(ctx);
+    }
+
+    @Override
+    public Object visitParagraph(AngularParser.ParagraphContext ctx) {
+        return super.visitParagraph(ctx);
+    }
+
+    @Override
+    public Object visitH_Element(AngularParser.H_ElementContext ctx) {
+        return super.visitH_Element(ctx);
+    }
+
+    @Override
+    public Object visitP_Element(AngularParser.P_ElementContext ctx) {
+        return super.visitP_Element(ctx);
+    }
+    //>>>>>>>>>>>>>>>>>>>>>>
 //    <<<<<<<<<<<<<<<<<<<< Typescript
 
     @Override

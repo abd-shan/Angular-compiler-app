@@ -76,9 +76,9 @@ div
     ;
 
 divAttribute
-    : classid                            #ClassID
-    | ng                                 #NgDirective
+    :ng                                 #NgDirective
     | event                              #EventBinding
+    | ATTRIBUTE                          #ClassId
     ;
 
 divChild
@@ -105,8 +105,8 @@ img
 br
     : TAG_OPEN ID TAG_CLOSE ANGULAR_BINDING;
 
-classid
-    : ATTRIBUTE;
+/*classID
+    : ATTRIBUTE;*/
 
 ng
     : ANGULAR_ATTRIBUTE_DIRECTIVE;
