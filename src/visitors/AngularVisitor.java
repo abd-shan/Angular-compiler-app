@@ -1,5 +1,7 @@
 package visitors;
+
 import java.util.*;
+
 import css.Css;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
@@ -17,8 +19,6 @@ import ts.types.Number;
 import html.DivChild.*;
 import html.Paragraph.*;
 import html.DivAttribute.*;
-
-
 
 
 public class AngularVisitor extends AngularParserBaseVisitor {
@@ -159,6 +159,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
         return new H_Element(id1, binding, id2);
     }
+
     @Override
     public Object visitP_Element(AngularParser.P_ElementContext ctx) {
         AngularParser.PElementContext pCtx = ctx.pElement();
@@ -454,7 +455,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     @Override
     public Object visitArray(AngularParser.ArrayContext ctx) {
         Array array = new Array();
-        for (int i = 0; i <ctx.literal().size(); i++) {
+        for (int i = 0; i < ctx.literal().size(); i++) {
             array.add((Type) visit(ctx.literal(i)));
         }
         return array;
@@ -462,11 +463,11 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitMethod(AngularParser.MethodContext ctx) {
-    String last=ctx.ID().getText()+ ctx.ID().getSymbol().getLine();
-    scope += last;
-    String name = ctx.ID().getText();
+        String last = "." + ctx.ID().getText() + ctx.ID().getSymbol().getLine();
+        scope += last;
+        String name = ctx.ID().getText();
 
-    Method method= new Method(name);
+        Method method = new Method(name);
 
         for (int i = 0; i < ctx.expression().size(); i++) {
             Expression expression = (Expression) visit(ctx.expression(i));
