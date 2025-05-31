@@ -2,12 +2,12 @@ package html;
 
 public class HtmlSymbol {
     String name;
-    String type;   // Attributes
+    String attribute;   // Attributes
     String scope;
 
-    public HtmlSymbol(String name, String type, String scope) {
+    public HtmlSymbol(String name, String attribute, String scope) {
         this.name = name;
-        this.type = type;
+        this.attribute = attribute;
         this.scope = scope;
     }
 
@@ -15,8 +15,8 @@ public class HtmlSymbol {
         return name;
     }
 
-    public String getType() {
-        return type;
+    public String getAttribute() {
+        return attribute;
     }
 
     public String getScope() {
