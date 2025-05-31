@@ -1,24 +1,22 @@
 package html;
 
+import java.util.List;
+
 public class Html {
-    public Div div;
+    public List<DivNode> divs;
 
-    public Html(Div div) {
-        this.div = div;
+    public List<DivNode> getDivs() {
+        return divs;
     }
 
-    public Div getDiv() {
-        return div;
-    }
-
-    public void setDiv(Div div) {
-        this.div = div;
+    public void setDivs(List<DivNode> divs) {
+        this.divs = divs;
     }
 
     @Override
     public String toString() {
         return "Html{" +
-                "div=" + div +
+                "divs=" + divs +
                 '}';
     }
 }

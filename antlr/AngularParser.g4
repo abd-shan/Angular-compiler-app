@@ -65,54 +65,59 @@ htmlOption: TEMPLATE COLON BACKTICK html BACKTICK;
       ;
 
 // <<<<<    html parser
+// <<<<< HTML parser
 
 html
-    : div;
+    : div+ ;
 
 div
     : TAG_OPEN ID divAttribute* TAG_CLOSE
       divChild*
-      TAG_OPEN_SELF ID TAG_CLOSE        #DivElement
+      TAG_OPEN_SELF ID TAG_CLOSE        #DivNode
     ;
 
 divAttribute
-    :ng                                 #NgDirective
-    | event                              #EventBinding
-    | ATTRIBUTE                          #ClassId
+    : ng                      #NgDirective
+    | event                   #EventBinding
+    | ATTRIBUTE               #ClassOrId
     ;
 
 divChild
-    : img                                #Image
-    | div                                #NestedDiv
-    | br                                 #BrTag
-    | paragragh                          #Paragraph
+    : div                               #NestedDiv
+    | image                             #ImageElement
+    | paragraph                         #ParagraphWrapper
+    | br                                #BrTag
+
     ;
 
-paragragh
-    : hElement                           #H_Element
-    | pElement                           #P_Element
+paragraph
+    : hElement                    #H_Element
+    | pElement                  #P_Element
     ;
 
 hElement
-    : TAG_OPEN ID TAG_CLOSE ANGULAR_BINDING TAG_OPEN_SELF ID TAG_CLOSE;
+    : TAG_OPEN ID TAG_CLOSE ANGULAR_BINDING TAG_OPEN_SELF ID TAG_CLOSE
+    ;
 
 pElement
-    : TAG_OPEN P TAG_CLOSE ANGULAR_BINDING TAG_OPEN_SELF P TAG_CLOSE;
+    : TAG_OPEN P TAG_CLOSE ANGULAR_BINDING TAG_OPEN_SELF P TAG_CLOSE
+    ;
 
-img
-    : TAG_OPEN ID ANGULAR_ATTRIBUTE_PROPERTY TAG_CLOSE;
+image
+    : TAG_OPEN ID ANGULAR_ATTRIBUTE_PROPERTY TAG_CLOSE
+    ;
 
 br
-    : TAG_OPEN ID TAG_CLOSE ANGULAR_BINDING;
-
-/*classID
-    : ATTRIBUTE;*/
+    : TAG_OPEN ID TAG_CLOSE ANGULAR_BINDING
+    ;
 
 ng
-    : ANGULAR_ATTRIBUTE_DIRECTIVE;
+    : ANGULAR_ATTRIBUTE_DIRECTIVE
+    ;
 
 event
-    : ANGULAR_ATTRIBUTE_EVENT;
+    : ANGULAR_ATTRIBUTE_EVENT
+    ;
 
 // <<<<<<<<<<<<< css parser
 

@@ -1,9 +1,9 @@
-package html.ParagraphElement;
+package html.Paragraph;
 
-public class PElement extends ParagraphElement{
+public class P_Element extends ParagraphElement{
     public String binding;
 
-    public PElement(String binding) {
+    public P_Element(String binding) {
         this.binding = binding;
     }
 

@@ -1,9 +1,9 @@
 package html.DivAttribute;
 
-public class Event extends DivAttribute{
+public class EventBinding extends DivAttribute{
 
     public String event;
-    public Event(String event) {
+    public EventBinding(String event) {
         this.event = event;
     }
 

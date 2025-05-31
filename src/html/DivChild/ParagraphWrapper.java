@@ -1,10 +1,10 @@
 package html.DivChild;
 
-import html.ParagraphElement.ParagraphElement;
+import html.Paragraph.ParagraphElement;
 
-public class Paragraph {
-    public ParagraphElement paragraph;
-    public Paragraph(ParagraphElement paragraph) {
+public class ParagraphWrapper {
+    public html.Paragraph.ParagraphElement paragraph;
+    public ParagraphWrapper(html.Paragraph.ParagraphElement paragraph) {
         this.paragraph = paragraph;
     }
 
@@ -19,7 +19,7 @@ public class Paragraph {
 
     @Override
     public String toString() {
-        return "Paragraph{" +
+        return "ParagraphWrapper{" +
                 "paragraph=" + paragraph +
                 '}';
     }

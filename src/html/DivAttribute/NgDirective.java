@@ -1,8 +1,8 @@
 package html.DivAttribute;
 
-public class Ng extends DivAttribute{
+public class NgDirective extends DivAttribute{
     public String directive;
-    public Ng(String directive) {
+    public NgDirective(String directive) {
         this.directive = directive;
     }
 

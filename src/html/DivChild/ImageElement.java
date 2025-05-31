@@ -1,9 +1,9 @@
 package html.DivChild;
 
-public class Image extends DivChild{
+public class ImageElement extends DivChild{
     public String id;
     public String attribute;
-    public Image(String id, String attribute) {
+    public ImageElement(String id, String attribute) {
         this.id = id;
         this.attribute = attribute;
     }

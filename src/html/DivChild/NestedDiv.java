@@ -1,19 +1,19 @@
 package html.DivChild;
 
-import html.Div;
+import html.DivNode;
 
 public class NestedDiv extends DivChild{
-    public Div div;
-    public NestedDiv(Div div) {
+    public DivNode div;
+    public NestedDiv(DivNode div) {
         this.div = div;
     }
 
 
-    public Div getDiv() {
+    public DivNode getDiv() {
         return div;
     }
 
-    public void setDiv(Div div) {
+    public void setDiv(DivNode div) {
         this.div = div;
     }
 

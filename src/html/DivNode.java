@@ -5,12 +5,12 @@ import html.DivChild.DivChild;
 
 import java.util.List;
 
-public class DivElement extends Div{
+public class DivNode extends DivChild{
     public String id;
     public List<DivAttribute> attributes;
     public List<DivChild> children;
 
-    public DivElement(String id, List<DivAttribute> attributes, List<DivChild> children) {
+    public DivNode(String id, List<DivAttribute> attributes, List<DivChild> children) {
         this.id = id;
         this.attributes = attributes;
         this.children = children;
@@ -22,6 +22,23 @@ public class DivElement extends Div{
 
     public void setId(String id) {
         this.id = id;
+    }
+
+
+    public List<DivAttribute> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(List<DivAttribute> attributes) {
+        this.attributes = attributes;
+    }
+
+    public List<DivChild> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<DivChild> children) {
+        this.children = children;
     }
 
     @Override

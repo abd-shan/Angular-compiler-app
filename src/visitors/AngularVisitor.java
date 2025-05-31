@@ -1,9 +1,12 @@
 package visitors;
-
+import java.util.*;
 import css.Css;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
+import html.DivChild.ParagraphWrapper;
+import html.DivNode;
 import html.Html;
+import org.antlr.v4.runtime.tree.ParseTree;
 import program.Program;
 import ts.*;
 import ts.expressions.Attribute;
@@ -11,6 +14,12 @@ import ts.expressions.Expression;
 import ts.expressions.Variable;
 import ts.types.*;
 import ts.types.Number;
+import html.DivChild.*;
+import html.Paragraph.*;
+import html.DivAttribute.*;
+
+
+
 
 public class AngularVisitor extends AngularParserBaseVisitor {
     Program program;
@@ -50,8 +59,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     }
 
     @Override
-    public Object visitDivElement(AngularParser.DivElementContext ctx) {
-        return super.visitDivElement(ctx);
+    public Object visitDivNode(AngularParser.DivNodeContext ctx) {
+        return super.visitDivNode(ctx);
     }
 
     @Override
@@ -65,13 +74,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     }
 
     @Override
-    public Object visitClassId(AngularParser.ClassIdContext ctx) {
-        return super.visitClassId(ctx);
-    }
-
-    @Override
-    public Object visitImage(AngularParser.ImageContext ctx) {
-        return super.visitImage(ctx);
+    public Object visitClassOrId(AngularParser.ClassOrIdContext ctx) {
+        return super.visitClassOrId(ctx);
     }
 
     @Override
@@ -80,13 +84,18 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     }
 
     @Override
-    public Object visitBrTag(AngularParser.BrTagContext ctx) {
-        return super.visitBrTag(ctx);
+    public Object visitImageElement(AngularParser.ImageElementContext ctx) {
+        return super.visitImageElement(ctx);
     }
 
     @Override
-    public Object visitParagraph(AngularParser.ParagraphContext ctx) {
-        return super.visitParagraph(ctx);
+    public Object visitParagraphElement(AngularParser.ParagraphElementContext ctx) {
+        return super.visitParagraphElement(ctx);
+    }
+
+    @Override
+    public Object visitBrTag(AngularParser.BrTagContext ctx) {
+        return super.visitBrTag(ctx);
     }
 
     @Override
@@ -98,6 +107,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public Object visitP_Element(AngularParser.P_ElementContext ctx) {
         return super.visitP_Element(ctx);
     }
+
     //>>>>>>>>>>>>>>>>>>>>>>
 //    <<<<<<<<<<<<<<<<<<<< Typescript
 

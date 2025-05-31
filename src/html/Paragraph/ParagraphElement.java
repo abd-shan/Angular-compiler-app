@@ -1,4 +1,4 @@
-package html.ParagraphElement;
+package html.Paragraph;
 
 public abstract class ParagraphElement {
 }

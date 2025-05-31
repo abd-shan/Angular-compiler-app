@@ -1,8 +1,8 @@
 package html.DivAttribute;
 
-public class ClassId extends DivAttribute{
+public class ClassOrId extends DivAttribute{
     public String attribute;
-    public ClassId(String attribute) {
+    public ClassOrId(String attribute) {
         this.attribute = attribute;
     }
 
