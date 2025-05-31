@@ -48,12 +48,13 @@ import Profile from './Profile'
 })
 export class AppComponent {
   products:any = {hi : "hi"};
-  selectedProduct:string ="5";
+  selectedProduct : string = "5";
 
   constructor(){
   let a :number = 5;
   let b :any = [1,2,3];
-
+  let c :string = "15";
+  let  selectedProduct2 : string = "2";
 
   this.products = b;
   }

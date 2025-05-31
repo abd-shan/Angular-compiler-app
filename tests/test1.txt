@@ -43,37 +43,22 @@
       }
     `
   ],
-  template: `
-    <div class="container">
-      <div id="left" class="detailsBox" *ngIf="selectedProduct">
-        <h2>{{ selectedProduct.name }}</h2>
-        <img [src]="selectedProduct.image">
-        <p>{{ selectedProduct.description }}</p>
-      </div>
-
-      <div id="right">
-        <div class="product" *ngFor="let product of products" (click)="showDetails(product)">
-          <img [src]="product.image">
-          <br>{{ product.name }}
-        </div>
-      </div>
-    </div>
-  `,
+  template: `  `,
 })
 export class AppComponent {
 
-  products:any;
-  selectedProduct:any;
-  miss:string;
+  products :any;
+  selectedProduct :any;
+  miss :string;
 
 
   constructor() {
 
 
 
-     let imad:string = "Imad";
-     let  g:string = "Sss";
-     let abd:number = 5;
+     let imad :string = "Imad";
+     let  g :string = "Sss";
+     let abd :number = 5;
 
      this.miss = "please give us A";
 
@@ -104,17 +89,17 @@ export class AppComponent {
 
   }
 
-  showDetails(product: string) {
+  showDetails() {
 
 
-     let imad:string = "Imad";
-     let  g:string = "Sss";
-     let abd:number = 5;
+//     let imad:string = "Imad";
+  //   let  g:string = "Sss";
+   //  let abd:number = 5;
 
-        product = "pro";
+   //     product = "pro";
 
-    this.selectedProduct = product;
-     imad = "aA";
+   // this.selectedProduct = product;
+//     imad = "aA";
 
 //     this.products=g;
 

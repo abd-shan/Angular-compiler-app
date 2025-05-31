@@ -40,13 +40,13 @@ componentList
 
 value
     : ID                                #ValueID
+    | NUMERIC_VALUE                     #ValueNumber
+    | FALSE                             #ValueFalse
+    | TRUE                              #ValueTrue
+    | STRING                            #ValueString
     | ID DOT ID                         #ValueProperty
     | THIS ID                           #ValueThisID
     | THIS ID DOT ID                    #ValueThisProperty
-    | STRING                            #ValueString
-    | NUMERIC_VALUE                     #ValueNumber
-    | TRUE                              #ValueTrue
-    | FALSE                             #ValueFalse
     | LBRACE (ID COLON STRING (COMMA ID COLON STRING)*)? RBRACE  #ValueKeyValue
     | LBRACKET ((value COMMA)* value)? RBRACKET                  #ValueArray
     ;
@@ -54,9 +54,9 @@ value
 
   expression:
            LET ID COLON type SEMICOLON                                          #DeclareVariable
-          |LET ID COLON type EQUAL_SIGN value SEMICOLON                       #DeclareAndAssign
+          |LET ID COLON type EQUAL_SIGN literal SEMICOLON                       #DeclareAndAssign
           |ID EQUAL_SIGN literal SEMICOLON                                      #AssignVariable
-          |(THIS)? ID EQUAL_SIGN value SEMICOLON                              #AssignAttribute
+          |(THIS)? ID EQUAL_SIGN literal SEMICOLON                              #AssignAttribute
           |IF LPARENTHESIS STRING? RPARENTHESIS  LBRACE expression* RBRACE      #If
           |FOR LPARENTHESIS STRING? RPARENTHESIS  LBRACE expression* RBRACE     #For
   ;

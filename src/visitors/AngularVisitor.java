@@ -290,7 +290,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         if (ctx.type().NUMBER() != null) {
             kind = Kind.number;
             try {
-                type = (Number) visit(ctx.value());
+                type = (Number) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
@@ -298,7 +298,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         } else if (ctx.type().BOOLEAN() != null) {
             kind = Kind.bool;
             try {
-                type = (Bool) visit(ctx.value());
+                type = (Bool) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
@@ -306,14 +306,14 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         } else if (ctx.type().STRINGDL() != null) {
             kind = Kind.string;
             try {
-                type = (Text) visit(ctx.value());
+                type = (Text) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
             }
         } else {
             kind = Kind.any;
-            type = (Type) visit(ctx.value());
+            type = (Type) visit(ctx.literal());
         }
 
         Symbol symbol = symbolTable.findSymbol(name, scope);
