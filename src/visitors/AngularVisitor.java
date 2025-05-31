@@ -52,7 +52,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitHtmlOption(AngularParser.HtmlOptionContext ctx) {
-        return visit(ctx.html());  // يعيد كائن Html من الدالة visitHtml
+        return visit(ctx.html());
     }
 
 
@@ -68,7 +68,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitDivNode(AngularParser.DivNodeContext ctx) {
-        String tagName = ctx.ID(0).getText(); // اسم الـ div الرئيسي
+        String tagName = ctx.ID(0).getText();
         List<DivAttribute> attributes = new ArrayList<>();
 
         for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
@@ -128,19 +128,23 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     }
 
     @Override
-    public Object visitHElement(AngularParser.HElementContext ctx) {
-        String id1 = ctx.ID(0).getText();
-        String binding = ctx.ANGULAR_BINDING().getText();
-        String id2 = ctx.ID(1).getText();
+    public Object visitH_Element(AngularParser.H_ElementContext ctx) {
+        AngularParser.HElementContext hCtx = ctx.hElement();
+
+        String id1 = hCtx.ID(0).getText();
+        String binding = hCtx.ANGULAR_BINDING(0).getText();
+        String id2 = hCtx.ID(1).getText();
+
         return new H_Element(id1, binding, id2);
-
     }
-
     @Override
-    public Object visitPElement(AngularParser.PElementContext ctx) {
-        String binding = ctx.ANGULAR_BINDING().getText();
+    public Object visitP_Element(AngularParser.P_ElementContext ctx) {
+        AngularParser.PElementContext pCtx = ctx.pElement();
+        String binding = pCtx.ANGULAR_BINDING(0).getText();
+
         return new P_Element(binding);
     }
+
 
     //>>>>>>>>>>>>>>>>>>>>>>
 //    <<<<<<<<<<<<<<<<<<<< Typescript

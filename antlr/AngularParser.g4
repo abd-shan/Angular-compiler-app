@@ -64,7 +64,6 @@ htmlOption: TEMPLATE COLON BACKTICK html BACKTICK;
       : ID COLON type (COMMA ID COLON type)*
       ;
 
-// <<<<<    html parser
 // <<<<< HTML parser
 
 html
