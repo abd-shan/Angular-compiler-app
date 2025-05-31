@@ -26,6 +26,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     String scope = "";
     public SymbolTable symbolTable = new SymbolTable();
 
+    public LinkedList<String> errors = new LinkedList<>();
+
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
 
@@ -128,7 +130,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     @Override
     public Object visitHElement(AngularParser.HElementContext ctx) {
         String id1 = ctx.ID(0).getText();
-        String binding = ctx.ANGULAR_BINDING(0).getText();
+        String binding = ctx.ANGULAR_BINDING().getText();
         String id2 = ctx.ID(1).getText();
         return new H_Element(id1, binding, id2);
 
@@ -136,7 +138,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitPElement(AngularParser.PElementContext ctx) {
-        String binding = ctx.ANGULAR_BINDING(0).getText();
+        String binding = ctx.ANGULAR_BINDING().getText();
         return new P_Element(binding);
     }
 
@@ -181,9 +183,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         Symbol symbol = symbolTable.findSymbol(name, scope);
         if (symbol == null) symbolTable.addSymbol(name, kind, scope);
         else {
-            // error attribute already declared
-            System.out.println("Error: Symbol " + name + " already exists");
-            System.exit(1);
+            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " already exists ");
         }
         return new Attribute(name, kind);
     }
@@ -211,8 +211,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         if (symbol == null) symbolTable.addSymbol(name, kind, type, scope);
         else {
             // error attribute already declared
-            System.out.println("Error: Symbol " + name + " already exists");
-            System.exit(1);
+            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " already exists ");
         }
 
         return new Attribute(name, kind);
@@ -249,8 +248,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
             symbolTable.addSymbol(name, kind, scope);
         else {
             // error variable already declared in this scope
-            System.out.println("Error: Symbol " + name + " already exists");
-            System.exit(1);
+            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " already exists,");
         }
 
 
@@ -263,19 +261,29 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         Kind kind;
         Type type;
         if (ctx.type().NUMBER() != null) {
-//            try {
             kind = Kind.number;
-            type = (Number) visit(ctx.literal());
-//            } catch (ClassCastException e) {
-//                System.out.println("expected number, found something else");
-//                type = null;
-//            }
+            try {
+                type = (Number) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
+            }
         } else if (ctx.type().BOOLEAN() != null) {
             kind = Kind.bool;
-            type = (Bool) visit(ctx.literal());
+            try {
+                type = (Bool) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
+            }
         } else if (ctx.type().STRINGDL() != null) {
             kind = Kind.string;
-            type = (Text) visit(ctx.literal());
+            try {
+                type = (Text) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
+            }
         } else {
             kind = Kind.any;
             type = (Type) visit(ctx.literal());
@@ -286,8 +294,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
             symbolTable.addSymbol(name, kind, type, scope);
         else {
             // error variable already declared in this scope
-            System.out.println("Error: Symbol " + name + " already exists");
-            System.exit(1);
+            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " already exists");
         }
         return new Variable(name, kind);
     }
@@ -297,17 +304,31 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         String name = ctx.ID().getText();
         Symbol symbol = symbolTable.findSymbol(name, scope);
         if (symbol == null) {
-            System.out.println("Error: Symbol " + name + " not found");
-            System.exit(1);
+            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " not declared already");
         }
         Kind kind = symbol.getKind();
         Type type;
         if (kind == Kind.number) {
-            type = (Number) visit(ctx.literal());
+            try {
+                type = (Number) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
+            }
         } else if (kind == Kind.bool) {
-            type = (Bool) visit(ctx.literal());
+            try {
+                type = (Bool) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
+            }
         } else if (kind == Kind.string) {
-            type = (Text) visit(ctx.literal());
+            try {
+                type = (Text) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
+            }
         } else
             type = (Type) visit(ctx.literal());
 
@@ -322,17 +343,31 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
         Symbol symbol = symbolTable.findSymbol(name, scope);
         if (symbol == null) {
-            System.out.println("Error: Symbol " + name + " not found");
-            System.exit(1);
+            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " not declared already");
         }
         Kind kind = symbol.getKind();
         Type type;
         if (kind == Kind.number) {
-            type = (Number) visit(ctx.literal());
+            try {
+                type = (Number) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
+            }
         } else if (kind == Kind.bool) {
-            type = (Bool) visit(ctx.literal());
+            try {
+                type = (Bool) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
+            }
         } else if (kind == Kind.string) {
-            type = (Text) visit(ctx.literal());
+            try {
+                type = (Text) visit(ctx.literal());
+            } catch (ClassCastException e) {
+                type = null;
+                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
+            }
         } else
             type = (Type) visit(ctx.literal());
 

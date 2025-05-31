@@ -25,11 +25,14 @@ public class Main {
         visitor = new AngularVisitor();
         Program program = (Program) visitor.visit(tree);
 
-        System.out.println(program);
+        if (visitor.errors.size() > 0) {
+            System.out.println(visitor.errors);
 
-        System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
+        }else {
+            System.out.println(program);
 
-        System.out.println(visitor.symbolTable);
+            System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
 
-    }
+            System.out.println(visitor.symbolTable);
+        }    }
 }
