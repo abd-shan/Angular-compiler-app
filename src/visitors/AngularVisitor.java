@@ -29,8 +29,10 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public SymbolTable symbolTable = new SymbolTable();
 
     public LinkedList<String> errors = new LinkedList<>();
-
+    public ComponentTable componentTable=new ComponentTable();
+    private String currentComponentName = "";
     public HtmlSymbolTable htmlSymbolTable = new HtmlSymbolTable();
+
 
 
 
@@ -85,6 +87,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         Component usedComponent = componentTable.getComponentBySelector(tagName);
 
         if (usedComponent != null) {
+
             componentTable.validateImportUsage(currentComponentName, usedComponent.getClassName(), ctx.getStart().getLine());
         }
 

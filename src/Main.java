@@ -14,7 +14,7 @@ public class Main {
     public static AngularVisitor visitor;
     public static void main(String[] args) throws IOException {
 
-        String source = "tests/test1.txt";
+        String source = "tests/test2.txt";
         CharStream cs = fromFileName(source);
         AngularLexer lexer = new AngularLexer(cs);
         CommonTokenStream token = new CommonTokenStream(lexer);
@@ -33,6 +33,12 @@ public class Main {
             System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
 
             System.out.println(visitor.symbolTable);
+
+            System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< HTML SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
+
+            System.out.println(visitor.htmlSymbolTable);
+
+
             visitor.componentTable.printTable();
         }    }
 }
