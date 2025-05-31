@@ -18,10 +18,10 @@ public class Method extends Constructor {
         this.name = name;
     }
 
-    @Override
-    public String toString() {
-        return "Method{" +
-                "name='" + name + '\'' +
-                '}';
-    }
+//    @Override
+//    public String toString() {
+//        return "Method{" +
+//                "name='" + name + '\'' +
+//                '}';
+//    }
 }

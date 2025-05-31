@@ -58,5 +58,8 @@ export class AppComponent {
   this.products = b;
   }
 
+f1(){
+  let a :number = 15;
+}
 
 }

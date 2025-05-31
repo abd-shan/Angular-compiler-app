@@ -185,8 +185,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
             typeScript.setConstructor(constructor);
         }
         for (int i = 0; i < ctx.method().size(); i++) {
-//            Method method = (Method) visit(ctx.method(i));
-//            typeScript.addMethod(method);
+            Method method = (Method) visit(ctx.method(i));
+            typeScript.addMethod(method);
         }
 
         return typeScript;
@@ -462,7 +462,21 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitMethod(AngularParser.MethodContext ctx) {
-        return super.visitMethod(ctx);
+    String last=ctx.ID().getText()+ ctx.ID().getSymbol().getLine();
+    scope += last;
+    String name = ctx.ID().getText();
+
+    Method method= new Method(name);
+
+        for (int i = 0; i < ctx.expression().size(); i++) {
+            Expression expression = (Expression) visit(ctx.expression(i));
+            method.addExpression(expression);
+        }
+
+        scope = scope.substring(0, scope.length() - last.length());
+
+        return method;
+
     }
 
     @Override
