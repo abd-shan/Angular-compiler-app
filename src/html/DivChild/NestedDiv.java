@@ -19,8 +19,6 @@ public class NestedDiv extends DivChild{
 
     @Override
     public String toString() {
-        return "NestedDiv{" +
-                "div=" + div +
-                '}';
+        return  div.toString() ;
     }
 }

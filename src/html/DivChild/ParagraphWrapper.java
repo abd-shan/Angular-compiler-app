@@ -19,8 +19,8 @@ public class ParagraphWrapper extends DivChild{
 
     @Override
     public String toString() {
-        return "ParagraphWrapper{" +
-                "paragraph=" + paragraph +
-                '}';
+        return
+                paragraph.toString()
+                ;
     }
 }

@@ -26,9 +26,7 @@ public class BrTag extends DivChild{
 
     @Override
     public String toString() {
-        return "Br{" +
-                "id='" + id + '\'' +
-                ", binding='" + binding + '\'' +
-                '}';
+        return "id='" + id + '\'' +
+                ", binding='" + binding + '\'';
     }
 }

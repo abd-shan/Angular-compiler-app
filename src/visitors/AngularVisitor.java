@@ -74,39 +74,40 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     }
 
 
-  @Override
-  public Object visitDivNode(AngularParser.DivNodeContext ctx) {
-      String tagName = "div";
-      String attributes = "";
-      String currentScope = scope;
 
-      for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
-          attributes += attrCtx.getText() + " ";
+    @Override
+    public Object visitDivNode(AngularParser.DivNodeContext ctx) {
+        String tagName = ctx.ID(0).getText();
+        List<DivAttribute> attributes = new ArrayList<>();
+        StringBuilder attributesText = new StringBuilder();  // <-- لجمع الـ attributes كنص
+        String currentScope = scope;
 
-          if (attrCtx.getText().startsWith("id=")) {
-              String idValue = attrCtx.getText().replace("\"", "");
-              currentScope += "." + idValue;
-          } else if (attrCtx.getText().startsWith("class=")) {
-              String classValue = attrCtx.getText().replace("\"", "").replace(" ", ".");
-              currentScope += "." + classValue;
-          }
-      }
+        for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
+            DivAttribute attr = (DivAttribute) visit(attrCtx);
+            attributes.add(attr);
 
-      htmlSymbolTable.addSymbol(tagName, attributes.trim(), currentScope);
+            attributesText.append(attr.toString()).append(" "); // استخدم toString أو getName/getValue
 
-      String parentScope = scope;
-      scope = currentScope;
+        }
 
-      for (AngularParser.DivChildContext child : ctx.divChild()) {
-          visit(child);
-      }
+        List<DivChild> children = new ArrayList<>();
+        for (AngularParser.DivChildContext childCtx : ctx.divChild()) {
+            DivChild child = (DivChild) visit(childCtx);
+            children.add(child);
+        }
 
-      scope = parentScope;
+        htmlSymbolTable.addSymbol(tagName, attributesText.toString().trim(), currentScope);
 
-      return null;
-  }
+        String parentScope = scope;
+        scope = currentScope;
 
+        for (AngularParser.DivChildContext child : ctx.divChild()) {
+            visit(child);
+        }
 
+        scope = parentScope;
+        return new DivNode(tagName, attributes, children);
+    }
 
     @Override
     public Object visitClassOrId(AngularParser.ClassOrIdContext ctx) {
@@ -417,27 +418,27 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         Type type;
         if (kind == Kind.number) {
             try {
-                type = (Number) visit(ctx.value());
+                type = (Number) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
             }
         } else if (kind == Kind.bool) {
             try {
-                type = (Bool) visit(ctx.value());
+                type = (Bool) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
             }
         } else if (kind == Kind.string) {
             try {
-                type = (Text) visit(ctx.value());
+                type = (Text) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
             }
         } else
-            type = (Type) visit(ctx.value());
+            type = (Type) visit(ctx.literal());
 
         symbol.setType(type);
 

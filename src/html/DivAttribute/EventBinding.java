@@ -17,8 +17,6 @@ public class EventBinding extends DivAttribute{
 
     @Override
     public String toString() {
-        return "Event{" +
-                "event='" + event + '\'' +
-                '}';
+        return event + '\'' ;
     }
 }

@@ -16,8 +16,6 @@ public class NgDirective extends DivAttribute{
 
     @Override
     public String toString() {
-        return "Ng directive{" +
-                "Ng directive='" + directive + '\'' +
-                '}';
+        return  directive + '\'' ;
     }
 }

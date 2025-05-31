@@ -26,9 +26,7 @@ public class ImageElement extends DivChild{
 
     @Override
     public String toString() {
-        return "Image{" +
-                "id='" + id + '\'' +
-                ", attribute='" + attribute + '\'' +
-                '}';
+        return "id='" + id + '\'' +
+                ", attribute='" + attribute + '\'';
     }
 }

@@ -38,9 +38,8 @@ public class H_Element extends ParagraphElement{
     @Override
     public String toString() {
         return "HElement{" +
-                "id1='" + id1 + '\'' +
+                 id1 + '\'' +
                 ", binding='" + binding + '\'' +
-                ", id2='" + id2 + '\'' +
                 '}';
     }
 }

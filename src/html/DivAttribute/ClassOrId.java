@@ -16,8 +16,7 @@ public class ClassOrId extends DivAttribute{
 
     @Override
     public String toString() {
-        return "ClassId{" +
-                "attribute='" + attribute + '\'' +
-                '}';
+        return  attribute + '\''
+                ;
     }
 }

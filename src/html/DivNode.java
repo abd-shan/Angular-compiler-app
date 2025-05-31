@@ -43,10 +43,10 @@ public class DivNode extends DivChild{
 
     @Override
     public String toString() {
-        return "DivElement{" +
-                "id='" + id + '\'' +
+        return
+                id +
                 ", attributes=" + attributes +
-                ", children=" + children +
-                '}';
+                ", children=" + children
+                ;
     }
 }

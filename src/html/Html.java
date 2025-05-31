@@ -18,7 +18,7 @@ public class Html {
 
     @Override
     public String toString() {
-        return "Html{" +
+        return "{" +
                 "divs=" + divs +
                 '}';
     }
