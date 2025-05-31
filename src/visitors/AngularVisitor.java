@@ -25,19 +25,41 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     Program program;
     String scope = "";
     public SymbolTable symbolTable = new SymbolTable();
-
-    public LinkedList<String> errors = new LinkedList<>();
+    public ComponentTable componentTable = new ComponentTable();
+    private String currentComponentName = "";
+    public List<String> errors = new ArrayList<>();
 
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
+
+        String selector = ctx.STRING(0).getText().replace("\"", "").replace("'", "");
+
+
+        boolean standalone = ctx.TRUE() != null;
+
+
+        List<String> imports = new ArrayList<>();
+        if (ctx.componentList() != null) {
+            for (var s : ctx.componentList().STRING()) {
+                imports.add(s.getText().replace("\"", "").replace("'", ""));
+            }
+        }
+
+
+        String className = ctx.ID().getText();
+        currentComponentName = className;
+
+
+        Component component = new Component(className, selector, standalone, imports);
+        componentTable.addComponent(component);
 
 
         Css css = (Css) visitCssOption(ctx.cssOption());
         TypeScript ts = (TypeScript) visitTs(ctx.ts());
         Html html = (Html) visitHtmlOption(ctx.htmlOption());
 
-        program = new Program(html, css, ts);
 
+        program = new Program(html, css, ts);
         return program;
     }
 
@@ -267,7 +289,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         if (ctx.type().NUMBER() != null) {
             kind = Kind.number;
             try {
-                type = (Number) visit(ctx.literal());
+                type = (Number) visit(ctx.value());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
@@ -275,7 +297,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         } else if (ctx.type().BOOLEAN() != null) {
             kind = Kind.bool;
             try {
-                type = (Bool) visit(ctx.literal());
+                type = (Bool) visit(ctx.value());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
@@ -283,14 +305,14 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         } else if (ctx.type().STRINGDL() != null) {
             kind = Kind.string;
             try {
-                type = (Text) visit(ctx.literal());
+                type = (Text) visit(ctx.value());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
             }
         } else {
             kind = Kind.any;
-            type = (Type) visit(ctx.literal());
+            type = (Type) visit(ctx.value());
         }
 
         Symbol symbol = symbolTable.findSymbol(name, scope);
@@ -353,27 +375,27 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         Type type;
         if (kind == Kind.number) {
             try {
-                type = (Number) visit(ctx.literal());
+                type = (Number) visit(ctx.value());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
             }
         } else if (kind == Kind.bool) {
             try {
-                type = (Bool) visit(ctx.literal());
+                type = (Bool) visit(ctx.value());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
             }
         } else if (kind == Kind.string) {
             try {
-                type = (Text) visit(ctx.literal());
+                type = (Text) visit(ctx.value());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
             }
         } else
-            type = (Type) visit(ctx.literal());
+            type = (Type) visit(ctx.value());
 
         symbol.setType(type);
 

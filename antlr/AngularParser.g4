@@ -9,7 +9,9 @@ options { tokenVocab = AngularLexer; }
 //   <<<<<< Angular parser
 
 program
-    : AT_COMPONENT LPARENTHESIS LBRACE (SELECTOR COLON STRING COMMA  STANDALONE COLON (TRUE | FALSE) COMMA)
+    :importStatement*
+     componentList?
+     AT_COMPONENT LPARENTHESIS LBRACE (SELECTOR COLON STRING COMMA  STANDALONE COLON (TRUE | FALSE) COMMA)
       (cssOption COMMA)?
       (htmlOption COMMA)?
       RBRACE RPARENTHESIS EXPORT CLASS ID LBRACE ts RBRACE
@@ -17,6 +19,13 @@ program
 
 cssOption: STYLES COLON LBRACKET BACKTICK css BACKTICK RBRACKET;
 htmlOption: TEMPLATE COLON BACKTICK html BACKTICK;
+
+importStatement
+    : IMPORT ID FROM STRING SEMICOLON?
+    ;
+
+componentList
+: 'imports' ':' '[' STRING (',' STRING)* ']';
 
   // <<<<<<< ts parser
 
@@ -29,12 +38,25 @@ htmlOption: TEMPLATE COLON BACKTICK html BACKTICK;
             |ID COLON type EQUAL_SIGN literal SEMICOLON     #DeclareAndAssignAttribute
   ;
 
+value
+    : ID                                #ValueID
+    | ID DOT ID                         #ValueProperty
+    | THIS ID                           #ValueThisID
+    | THIS ID DOT ID                    #ValueThisProperty
+    | STRING                            #ValueString
+    | NUMERIC_VALUE                     #ValueNumber
+    | TRUE                              #ValueTrue
+    | FALSE                             #ValueFalse
+    | LBRACE (ID COLON STRING (COMMA ID COLON STRING)*)? RBRACE  #ValueKeyValue
+    | LBRACKET ((value COMMA)* value)? RBRACKET                  #ValueArray
+    ;
+
 
   expression:
            LET ID COLON type SEMICOLON                                          #DeclareVariable
-          |LET ID COLON type EQUAL_SIGN literal SEMICOLON                       #DeclareAndAssign
+          |LET ID COLON type EQUAL_SIGN value SEMICOLON                       #DeclareAndAssign
           |ID EQUAL_SIGN literal SEMICOLON                                      #AssignVariable
-          |(THIS)? ID EQUAL_SIGN literal SEMICOLON                              #AssignAttribute
+          |(THIS)? ID EQUAL_SIGN value SEMICOLON                              #AssignAttribute
           |IF LPARENTHESIS STRING? RPARENTHESIS  LBRACE expression* RBRACE      #If
           |FOR LPARENTHESIS STRING? RPARENTHESIS  LBRACE expression* RBRACE     #For
   ;

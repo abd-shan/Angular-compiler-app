@@ -13,6 +13,7 @@ CLASS: 'class';
 SELECTOR: 'selector';
 STANDALONE: 'standalone';
 IMPORTS: 'imports';
+IMPORT:'import';
 STYLES: 'styles';
 TEMPLATE:'template';
 TRUE: 'true';
@@ -73,7 +74,8 @@ ANY: 'any';
 VOID: 'void';
 NULL: 'null';
 THIS:'this.';
-
+DOT:'.';
+FROM:'from';
 LET:'let';
 
 CONSTRUCTOR:'constructor';
