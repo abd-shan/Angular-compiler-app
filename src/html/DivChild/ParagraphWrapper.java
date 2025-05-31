@@ -2,7 +2,7 @@ package html.DivChild;
 
 import html.Paragraph.ParagraphElement;
 
-public class ParagraphWrapper {
+public class ParagraphWrapper extends DivChild{
     public html.Paragraph.ParagraphElement paragraph;
     public ParagraphWrapper(html.Paragraph.ParagraphElement paragraph) {
         this.paragraph = paragraph;

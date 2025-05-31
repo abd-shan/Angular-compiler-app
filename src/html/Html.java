@@ -4,7 +4,10 @@ import java.util.List;
 
 public class Html {
     public List<DivNode> divs;
+    public Html(List<DivNode> divs){
+        this.divs=divs;
 
+    }
     public List<DivNode> getDivs() {
         return divs;
     }

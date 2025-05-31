@@ -50,62 +50,94 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitHtmlOption(AngularParser.HtmlOptionContext ctx) {
-        return super.visitHtmlOption(ctx);
+        return visit(ctx.html());  // يعيد كائن Html من الدالة visitHtml
     }
+
 
     @Override
     public Object visitHtml(AngularParser.HtmlContext ctx) {
-        return super.visitHtml(ctx);
+        List<DivNode> divs = new ArrayList<>();
+        for (AngularParser.DivContext divCtx : ctx.div()) {
+            DivNode divNode = (DivNode) visit(divCtx);
+            divs.add(divNode);
+        }
+        return new Html(divs);
     }
 
     @Override
     public Object visitDivNode(AngularParser.DivNodeContext ctx) {
-        return super.visitDivNode(ctx);
-    }
+        String tagName = ctx.ID(0).getText(); // اسم الـ div الرئيسي
+        List<DivAttribute> attributes = new ArrayList<>();
 
-    @Override
-    public Object visitNgDirective(AngularParser.NgDirectiveContext ctx) {
-        return super.visitNgDirective(ctx);
-    }
+        for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
+            DivAttribute attr = (DivAttribute) visit(attrCtx);
+            attributes.add(attr);
+        }
 
-    @Override
-    public Object visitEventBinding(AngularParser.EventBindingContext ctx) {
-        return super.visitEventBinding(ctx);
+        List<DivChild> children = new ArrayList<>();
+        for (AngularParser.DivChildContext childCtx : ctx.divChild()) {
+            DivChild child = (DivChild) visit(childCtx);
+            children.add(child);
+        }
+
+        return new DivNode(tagName, attributes, children);
     }
 
     @Override
     public Object visitClassOrId(AngularParser.ClassOrIdContext ctx) {
-        return super.visitClassOrId(ctx);
+        return new ClassOrId(ctx.ATTRIBUTE().getText());
     }
 
     @Override
-    public Object visitNestedDiv(AngularParser.NestedDivContext ctx) {
-        return super.visitNestedDiv(ctx);
+    public Object visitNgDirective(AngularParser.NgDirectiveContext ctx) {
+        return new NgDirective(ctx.getText());
     }
 
     @Override
-    public Object visitImageElement(AngularParser.ImageElementContext ctx) {
-        return super.visitImageElement(ctx);
-    }
-
-    @Override
-    public Object visitParagraphElement(AngularParser.ParagraphElementContext ctx) {
-        return super.visitParagraphElement(ctx);
+    public Object visitEventBinding(AngularParser.EventBindingContext ctx) {
+        return new EventBinding(ctx.getText());
     }
 
     @Override
     public Object visitBrTag(AngularParser.BrTagContext ctx) {
-        return super.visitBrTag(ctx);
+        String id = ctx.getToken(AngularParser.ID, 0).getText();
+        String binding = ctx.getToken(AngularParser.ANGULAR_BINDING, 0).getText();
+        return new BrTag(id, binding);
+    }
+
+
+    @Override
+    public Object visitImageElement(AngularParser.ImageElementContext ctx) {
+        String id = ctx.getToken(AngularParser.ID, 0).getText();
+        String attr = ctx.getToken(AngularParser.ANGULAR_ATTRIBUTE_PROPERTY, 0).getText();
+        return new ImageElement(id, attr);
     }
 
     @Override
-    public Object visitH_Element(AngularParser.H_ElementContext ctx) {
-        return super.visitH_Element(ctx);
+    public Object visitNestedDiv(AngularParser.NestedDivContext ctx) {
+        DivNode nested = (DivNode) visit(ctx.div());
+        return new NestedDiv(nested);
     }
 
     @Override
-    public Object visitP_Element(AngularParser.P_ElementContext ctx) {
-        return super.visitP_Element(ctx);
+    public Object visitParagraphWrapper(AngularParser.ParagraphWrapperContext ctx) {
+        html.Paragraph.ParagraphElement paragraph = (html.Paragraph.ParagraphElement) visit(ctx.paragraph());
+        return new html.DivChild.ParagraphWrapper(paragraph);
+    }
+
+    @Override
+    public Object visitHElement(AngularParser.HElementContext ctx) {
+        String id1 = ctx.ID(0).getText();
+        String binding = ctx.ANGULAR_BINDING(0).getText();
+        String id2 = ctx.ID(1).getText();
+        return new H_Element(id1, binding, id2);
+
+    }
+
+    @Override
+    public Object visitPElement(AngularParser.PElementContext ctx) {
+        String binding = ctx.ANGULAR_BINDING(0).getText();
+        return new P_Element(binding);
     }
 
     //>>>>>>>>>>>>>>>>>>>>>>
