@@ -6,6 +6,8 @@ import gen.AngularParserBaseVisitor;
 import html.DivChild.ParagraphWrapper;
 import html.DivNode;
 import html.Html;
+import html.HtmlSymbol;
+import html.HtmlSymbolTable;
 import org.antlr.v4.runtime.tree.ParseTree;
 import program.Program;
 import ts.*;
@@ -27,6 +29,11 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public SymbolTable symbolTable = new SymbolTable();
 
     public LinkedList<String> errors = new LinkedList<>();
+
+    public HtmlSymbolTable htmlSymbolTable = new HtmlSymbolTable();
+
+
+
 
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
@@ -66,24 +73,40 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         return new Html(divs);
     }
 
-    @Override
-    public Object visitDivNode(AngularParser.DivNodeContext ctx) {
-        String tagName = ctx.ID(0).getText();
-        List<DivAttribute> attributes = new ArrayList<>();
 
-        for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
-            DivAttribute attr = (DivAttribute) visit(attrCtx);
-            attributes.add(attr);
-        }
+  @Override
+  public Object visitDivNode(AngularParser.DivNodeContext ctx) {
+      String tagName = "div";
+      String attributes = "";
+      String currentScope = scope;
 
-        List<DivChild> children = new ArrayList<>();
-        for (AngularParser.DivChildContext childCtx : ctx.divChild()) {
-            DivChild child = (DivChild) visit(childCtx);
-            children.add(child);
-        }
+      for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
+          attributes += attrCtx.getText() + " ";
 
-        return new DivNode(tagName, attributes, children);
-    }
+          if (attrCtx.getText().startsWith("id=")) {
+              String idValue = attrCtx.getText().replace("\"", "");
+              currentScope += "." + idValue;
+          } else if (attrCtx.getText().startsWith("class=")) {
+              String classValue = attrCtx.getText().replace("\"", "").replace(" ", ".");
+              currentScope += "." + classValue;
+          }
+      }
+
+      htmlSymbolTable.addSymbol(tagName, attributes.trim(), currentScope);
+
+      String parentScope = scope;
+      scope = currentScope;
+
+      for (AngularParser.DivChildContext child : ctx.divChild()) {
+          visit(child);
+      }
+
+      scope = parentScope;
+
+      return null;
+  }
+
+
 
     @Override
     public Object visitClassOrId(AngularParser.ClassOrIdContext ctx) {
@@ -100,20 +123,43 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         return new EventBinding(ctx.getText());
     }
 
+
     @Override
     public Object visitBrTag(AngularParser.BrTagContext ctx) {
-        String id = ctx.getToken(AngularParser.ID, 0).getText();
-        String binding = ctx.getToken(AngularParser.ANGULAR_BINDING, 0).getText();
+        AngularParser.BrContext brCtx = ctx.br();
+
+        String tagName = "br";
+        String attributes = brCtx.getText(); // بيحتوي على id و binding مثلاً
+        String currentScope = scope;
+
+        // منضيف للسيمبل تيبل
+        htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
+
+        // منشئ العنصر
+        String id = brCtx.getToken(AngularParser.ID, 0).getText();
+        String binding = brCtx.getToken(AngularParser.ANGULAR_BINDING, 0).getText();
+
         return new BrTag(id, binding);
     }
 
 
     @Override
     public Object visitImageElement(AngularParser.ImageElementContext ctx) {
-        String id = ctx.getToken(AngularParser.ID, 0).getText();
-        String attr = ctx.getToken(AngularParser.ANGULAR_ATTRIBUTE_PROPERTY, 0).getText();
-        return new ImageElement(id, attr);
+        AngularParser.ImageContext iCtx = ctx.image();
+
+        String tagName = "img";
+        String attributes = iCtx.getText(); // كل attributes مع بعض
+        String currentScope = scope;
+
+        // منضيف لرمز السيمبل تيبل
+        htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
+
+        return new ImageElement(
+                iCtx.ID(0).getText(),
+                iCtx.ANGULAR_ATTRIBUTE_PROPERTY(0).getText()
+        );
     }
+
 
     @Override
     public Object visitNestedDiv(AngularParser.NestedDivContext ctx) {
@@ -131,19 +177,37 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public Object visitH_Element(AngularParser.H_ElementContext ctx) {
         AngularParser.HElementContext hCtx = ctx.hElement();
 
-        String id1 = hCtx.ID(0).getText();
-        String binding = hCtx.ANGULAR_BINDING(0).getText();
-        String id2 = hCtx.ID(1).getText();
+        String tagName = "h2";
+        String attributes = hCtx.getText(); // كل محتوى العنصر كـ attribute
+        String currentScope = scope;
 
-        return new H_Element(id1, binding, id2);
+        // منضيف للسيمبل تيبل
+        htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
+
+        return new H_Element(
+                hCtx.ID(0).getText(),
+                hCtx.ANGULAR_BINDING(0).getText(),
+                hCtx.ID(1).getText()
+        );
     }
+
+
+
+
     @Override
     public Object visitP_Element(AngularParser.P_ElementContext ctx) {
         AngularParser.PElementContext pCtx = ctx.pElement();
-        String binding = pCtx.ANGULAR_BINDING(0).getText();
 
-        return new P_Element(binding);
+        String tagName = "p";
+        String attributes = pCtx.getText(); // ممكن يكون فيه {{ bindings }}
+        String currentScope = scope;
+
+        // منضيف للـ symbol table
+        htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
+
+        return new P_Element(pCtx.ANGULAR_BINDING(0).getText());
     }
+
 
 
     //>>>>>>>>>>>>>>>>>>>>>>
