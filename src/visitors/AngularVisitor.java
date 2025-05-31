@@ -82,6 +82,12 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         StringBuilder attributesText = new StringBuilder();  // <-- لجمع الـ attributes كنص
         String currentScope = scope;
 
+        Component usedComponent = componentTable.getComponentBySelector(tagName);
+
+        if (usedComponent != null) {
+            componentTable.validateImportUsage(currentComponentName, usedComponent.getClassName(), ctx.getStart().getLine());
+        }
+
         for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
             DivAttribute attr = (DivAttribute) visit(attrCtx);
             attributes.add(attr);
