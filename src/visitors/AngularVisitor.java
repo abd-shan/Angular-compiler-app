@@ -93,6 +93,12 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         String tagName = ctx.ID(0).getText();
         List<DivAttribute> attributes = new ArrayList<>();
 
+        Component usedComponent = componentTable.getComponentBySelector(tagName);
+
+        if (usedComponent != null) {
+            componentTable.validateImportUsage(currentComponentName, usedComponent.getClassName(), ctx.getStart().getLine());
+        }
+
         for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
             DivAttribute attr = (DivAttribute) visit(attrCtx);
             attributes.add(attr);
@@ -376,27 +382,27 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         Type type;
         if (kind == Kind.number) {
             try {
-                type = (Number) visit(ctx.value());
+                type = (Number) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
             }
         } else if (kind == Kind.bool) {
             try {
-                type = (Bool) visit(ctx.value());
+                type = (Bool) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
             }
         } else if (kind == Kind.string) {
             try {
-                type = (Text) visit(ctx.value());
+                type = (Text) visit(ctx.literal());
             } catch (ClassCastException e) {
                 type = null;
                 errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
             }
         } else
-            type = (Type) visit(ctx.value());
+            type = (Type) visit(ctx.literal());
 
         symbol.setType(type);
 
