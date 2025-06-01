@@ -1,5 +1,8 @@
 package visitors;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import css.Css;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
@@ -82,13 +85,11 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public Object visitDivNode(AngularParser.DivNodeContext ctx) {
         String tagName = ctx.ID(0).getText();
         scopeStack.push(tagName);
-        scope = String.join(" > ", scopeStack); // ✅ تحديث السياق بعد push
+        scope = String.join(" > ", scopeStack);
         String currentScope = scope;
 
-
         List<DivAttribute> attributes = new ArrayList<>();
-        StringBuilder attributesText = new StringBuilder();  // <-- لجمع الـ attributes كنص
-     //   String currentScope = scope;
+        StringBuilder attributesText = new StringBuilder();
 
         Component usedComponent = componentTable.getComponentBySelector(tagName);
 
@@ -101,7 +102,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
             DivAttribute attr = (DivAttribute) visit(attrCtx);
             attributes.add(attr);
 
-            attributesText.append(attr.toString()).append(" "); // استخدم toString أو getName/getValue
+            attributesText.append(attr.toString()).append(" ");
 
         }
 
@@ -144,7 +145,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public Object visitBrTag(AngularParser.BrTagContext ctx) {
         AngularParser.BrContext brCtx = ctx.br();
 
-        String tagName = "br";
+        String tagName = brCtx.getToken(AngularParser.ID, 0).getText();
+        String binding = brCtx.getToken(AngularParser.ANGULAR_BINDING, 0).getText();
         scopeStack.push(tagName);
         String currentScope = String.join(" > ", scopeStack);
 
@@ -152,11 +154,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
         htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
         scopeStack.pop();
-
-        String id = brCtx.getToken(AngularParser.ID, 0).getText();
-        String binding = brCtx.getToken(AngularParser.ANGULAR_BINDING, 0).getText();
-
-        return new BrTag(id, binding);
+        checkBindingForUndefinedVariable(binding, ctx.getStart().getLine());
+        return new BrTag(tagName, binding);
     }
 
 
@@ -164,7 +163,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public Object visitImageElement(AngularParser.ImageElementContext ctx) {
         AngularParser.ImageContext iCtx = ctx.image();
 
-        String tagName = "img";
+        String tagName = iCtx.ID(0).getText();
+        String property = iCtx.ANGULAR_ATTRIBUTE_PROPERTY(0).getText();
         scopeStack.push(tagName);
         String currentScope = String.join(" > ", scopeStack);
 
@@ -172,9 +172,22 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
         htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
          scopeStack.pop();
+        Pattern pattern = Pattern.compile("\\[.*?\\]\\s*=\\s*\"(.*?)\"");
+        Matcher matcher = pattern.matcher(property);
+        if (matcher.find()) {
+            String expression = matcher.group(1).trim();
+            String[] parts = expression.split("\\.");
+            String variableName = parts[0].trim();
+
+            if (symbolTable.findSymbol(variableName, scope) == null) {
+                int line = ctx.getStart().getLine();
+                String error = "Semantic Error at line " + line + ": Variable '" + variableName + "' is not defined in [src] binding.";
+                errors.add(error);
+            }
+        }
         return new ImageElement(
-                iCtx.ID(0).getText(),
-                iCtx.ANGULAR_ATTRIBUTE_PROPERTY(0).getText()
+                tagName,
+                property
         );
     }
 
@@ -195,17 +208,18 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public Object visitH_Element(AngularParser.H_ElementContext ctx) {
         AngularParser.HElementContext hCtx = ctx.hElement();
 
-        String tagName = "h2";
+        String tagName = hCtx.ID(0).getText();
+        String binding=hCtx.ANGULAR_BINDING(0).getText();
         scopeStack.push(tagName);
         String currentScope = String.join(" > ", scopeStack);
 
-        String attributes = hCtx.getText(); // كل محتوى العنصر كـ attribute
-        // منضيف للسيمبل تيبل
+        String attributes = hCtx.getText();
         htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
         scopeStack.pop();
+        checkBindingForUndefinedVariable(binding, ctx.getStart().getLine());
         return new H_Element(
-                hCtx.ID(0).getText(),
-                hCtx.ANGULAR_BINDING(0).getText(),
+                tagName,
+                binding,
                 hCtx.ID(1).getText()
         );
     }
@@ -218,17 +232,28 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         AngularParser.PElementContext pCtx = ctx.pElement();
 
         String tagName = "p";
+        String binding=pCtx.ANGULAR_BINDING(0).getText();
         scopeStack.push(tagName);
         String currentScope = String.join(" > ", scopeStack);
 
-        String attributes = pCtx.getText(); // ممكن يكون فيه {{ bindings }}
-        // منضيف للـ symbol table
+        String attributes = pCtx.getText();
         htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
         scopeStack.pop();
-        return new P_Element(pCtx.ANGULAR_BINDING(0).getText());
+        checkBindingForUndefinedVariable(binding, ctx.getStart().getLine());
+        return new P_Element(binding);
     }
 
+    private void checkBindingForUndefinedVariable(String binding, int line) {
+        String expression = binding.replaceAll("\\{\\{", "").replaceAll("}}", "").trim();
 
+        String[] parts = expression.split("\\.");
+        String variableName = parts[0].trim();
+
+        if (symbolTable.findSymbol(variableName, scope) == null) {
+            String error = "Semantic Error at line " + line + ": Variable '" + variableName + "' is not defined.";
+            errors.add(error);
+        }
+    }
 
     //>>>>>>>>>>>>>>>>>>>>>>
 //    <<<<<<<<<<<<<<<<<<<< Typescript

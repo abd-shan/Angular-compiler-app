@@ -14,7 +14,7 @@ public class Main {
     public static AngularVisitor visitor;
     public static void main(String[] args) throws IOException {
 
-        String source = "tests/test2.txt";
+        String source = "tests/test6.txt";
         CharStream cs = fromFileName(source);
         AngularLexer lexer = new AngularLexer(cs);
         CommonTokenStream token = new CommonTokenStream(lexer);
