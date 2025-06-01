@@ -17,11 +17,11 @@ public class HtmlSymbolTable {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(" %-26s │ %-80s │ %-80s \n", "Name", "Attribute", "Scope"));
+        sb.append(String.format(" %-26s │ %-85s │ %-85s \n", "Name", "Attribute", "Scope"));
 
         sb.append("────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n");
         for (HtmlSymbol symbol : symbols) {
-            sb.append(String.format("  %-26s │ %-80s │ %-80s \n",
+            sb.append(String.format("  %-26s │ %-85s │ %-85s \n",
                     symbol.getName(),
                     symbol.getAttribute(),
                     symbol.getScope()));

@@ -27,6 +27,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     Program program;
     String scope = "";
     public SymbolTable symbolTable = new SymbolTable();
+    Stack<String> scopeStack = new Stack<>();
 
     public LinkedList<String> errors = new LinkedList<>();
     public ComponentTable componentTable=new ComponentTable();
@@ -80,9 +81,14 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     @Override
     public Object visitDivNode(AngularParser.DivNodeContext ctx) {
         String tagName = ctx.ID(0).getText();
+        scopeStack.push(tagName);
+        scope = String.join(" > ", scopeStack); // ✅ تحديث السياق بعد push
+        String currentScope = scope;
+
+
         List<DivAttribute> attributes = new ArrayList<>();
         StringBuilder attributesText = new StringBuilder();  // <-- لجمع الـ attributes كنص
-        String currentScope = scope;
+     //   String currentScope = scope;
 
         Component usedComponent = componentTable.getComponentBySelector(tagName);
 
@@ -106,7 +112,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         }
 
         htmlSymbolTable.addSymbol(tagName, attributesText.toString().trim(), currentScope);
-
+        scopeStack.pop();
         String parentScope = scope;
         scope = currentScope;
 
@@ -139,13 +145,14 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         AngularParser.BrContext brCtx = ctx.br();
 
         String tagName = "br";
-        String attributes = brCtx.getText(); // بيحتوي على id و binding مثلاً
-        String currentScope = scope;
+        scopeStack.push(tagName);
+        String currentScope = String.join(" > ", scopeStack);
 
-        // منضيف للسيمبل تيبل
+        String attributes = brCtx.getText();
+
         htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
+        scopeStack.pop();
 
-        // منشئ العنصر
         String id = brCtx.getToken(AngularParser.ID, 0).getText();
         String binding = brCtx.getToken(AngularParser.ANGULAR_BINDING, 0).getText();
 
@@ -158,12 +165,13 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         AngularParser.ImageContext iCtx = ctx.image();
 
         String tagName = "img";
-        String attributes = iCtx.getText(); // كل attributes مع بعض
-        String currentScope = scope;
+        scopeStack.push(tagName);
+        String currentScope = String.join(" > ", scopeStack);
 
-        // منضيف لرمز السيمبل تيبل
+        String attributes = iCtx.getText();
+
         htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
-
+         scopeStack.pop();
         return new ImageElement(
                 iCtx.ID(0).getText(),
                 iCtx.ANGULAR_ATTRIBUTE_PROPERTY(0).getText()
@@ -188,12 +196,13 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         AngularParser.HElementContext hCtx = ctx.hElement();
 
         String tagName = "h2";
-        String attributes = hCtx.getText(); // كل محتوى العنصر كـ attribute
-        String currentScope = scope;
+        scopeStack.push(tagName);
+        String currentScope = String.join(" > ", scopeStack);
 
+        String attributes = hCtx.getText(); // كل محتوى العنصر كـ attribute
         // منضيف للسيمبل تيبل
         htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
-
+        scopeStack.pop();
         return new H_Element(
                 hCtx.ID(0).getText(),
                 hCtx.ANGULAR_BINDING(0).getText(),
@@ -209,12 +218,13 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         AngularParser.PElementContext pCtx = ctx.pElement();
 
         String tagName = "p";
-        String attributes = pCtx.getText(); // ممكن يكون فيه {{ bindings }}
-        String currentScope = scope;
+        scopeStack.push(tagName);
+        String currentScope = String.join(" > ", scopeStack);
 
+        String attributes = pCtx.getText(); // ممكن يكون فيه {{ bindings }}
         // منضيف للـ symbol table
         htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
-
+        scopeStack.pop();
         return new P_Element(pCtx.ANGULAR_BINDING(0).getText());
     }
 
