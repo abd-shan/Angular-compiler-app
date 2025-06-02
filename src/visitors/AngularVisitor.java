@@ -43,14 +43,36 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
+        String selector = ctx.STRING(0).getText().replace("\"", "").replace("'", "");
+        boolean standalone = ctx.TRUE() != null;
 
+        List<String> staticImports = new ArrayList<>();
+
+
+        if (ctx.componentList() != null) {
+            for (var s : ctx.componentList().STRING()) {
+                staticImports.add(s.getText().replace("\"", "").replace("'", ""));
+            }
+        }
+
+        String className = ctx.ID().getText();
+        currentComponentName = className;
+
+        Component component = new Component(className, selector, standalone, staticImports);
+        componentTable.addComponent(component);
+
+        for (var imp : ctx.importStatement()) {
+            String importedClass = imp.ID().getText();
+            componentTable.registerImport(importedClass);
+
+            component.getImports().add(importedClass);
+        }
 
         Css css = (Css) visitCssOption(ctx.cssOption());
         TypeScript ts = (TypeScript) visitTs(ctx.ts());
         Html html = (Html) visitHtmlOption(ctx.htmlOption());
 
         program = new Program(html, css, ts);
-
         return program;
     }
 
@@ -84,26 +106,23 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     @Override
     public Object visitDivNode(AngularParser.DivNodeContext ctx) {
         String tagName = ctx.ID(0).getText();
-        scopeStack.push(tagName);
-        scope = String.join(" > ", scopeStack);
-        String currentScope = scope;
-
         List<DivAttribute> attributes = new ArrayList<>();
-        StringBuilder attributesText = new StringBuilder();
 
-        Component usedComponent = componentTable.getComponentBySelector(tagName);
+        if (!tagName.isEmpty() && Character.isUpperCase(tagName.charAt(0))) {
+            Component currentComponent = componentTable.getComponentByClass(currentComponentName);
 
-        if (usedComponent != null) {
+            boolean isImported = currentComponent != null &&
+                    (currentComponent.importsComponent(tagName) || componentTable.isImportedViaStatement(tagName));
 
-            componentTable.validateImportUsage(currentComponentName, usedComponent.getClassName(), ctx.getStart().getLine());
+            if (!isImported) {
+                errors.add("Semantic Error at line " + ctx.ID(0).getSymbol().getLine() +
+                        ": Component '" + tagName + "' is not defined or imported.");
+            }
         }
 
         for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
             DivAttribute attr = (DivAttribute) visit(attrCtx);
             attributes.add(attr);
-
-            attributesText.append(attr.toString()).append(" ");
-
         }
 
         List<DivChild> children = new ArrayList<>();
@@ -112,18 +131,9 @@ public class AngularVisitor extends AngularParserBaseVisitor {
             children.add(child);
         }
 
-        htmlSymbolTable.addSymbol(tagName, attributesText.toString().trim(), currentScope);
-        scopeStack.pop();
-        String parentScope = scope;
-        scope = currentScope;
-
-        for (AngularParser.DivChildContext child : ctx.divChild()) {
-            visit(child);
-        }
-
-        scope = parentScope;
         return new DivNode(tagName, attributes, children);
     }
+
 
     @Override
     public Object visitClassOrId(AngularParser.ClassOrIdContext ctx) {

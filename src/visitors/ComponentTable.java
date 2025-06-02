@@ -23,6 +23,11 @@ public class ComponentTable {
         return importedComponents.contains(name);
     }
 
+    public void registerViaStatement(String componentName) {
+        importedComponents.add(componentName);
+
+    }
+
     public Component getComponentByClass(String className) {
         return components.get(className);
     }

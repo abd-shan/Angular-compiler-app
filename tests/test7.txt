@@ -2,7 +2,7 @@
 
   selector: "app-root",
   standalone: true,
-    import
+  imports:['Profile'],
 
   styles: [
     `
@@ -45,6 +45,7 @@
   ],
   template: `
     <div class="container">
+    <Profile></Profile>
       <div id="left" class="detailsBox" *ngIf="selectedProduct">
         <h2>{{ selectedProduct.name }}</h2>
         <img [src]="selectedProduct.image">

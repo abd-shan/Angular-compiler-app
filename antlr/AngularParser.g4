@@ -8,14 +8,22 @@ options { tokenVocab = AngularLexer; }
 
 //   <<<<<< Angular parser
 
+//program
+//    :importStatement*
+//     componentList?
+//     AT_COMPONENT LPARENTHESIS LBRACE (SELECTOR COLON STRING COMMA  STANDALONE COLON (TRUE | FALSE) COMMA)
+//      (cssOption COMMA)?
+//      (htmlOption COMMA)?
+//      RBRACE RPARENTHESIS EXPORT CLASS ID LBRACE ts RBRACE
+//    ;
 program
-    :importStatement*
-     componentList?
-     AT_COMPONENT LPARENTHESIS LBRACE (SELECTOR COLON STRING COMMA  STANDALONE COLON (TRUE | FALSE) COMMA)
+  : importStatement*
+    AT_COMPONENT LPARENTHESIS LBRACE   SELECTOR COLON STRING COMMA STANDALONE COLON (TRUE | FALSE) COMMA
+      (IMPORTS COLON LBRACKET componentList RBRACKET COMMA)?
       (cssOption COMMA)?
       (htmlOption COMMA)?
-      RBRACE RPARENTHESIS EXPORT CLASS ID LBRACE ts RBRACE
-    ;
+    RBRACE RPARENTHESIS EXPORT CLASS ID LBRACE ts RBRACE
+  ;
 
 cssOption: STYLES COLON LBRACKET BACKTICK css BACKTICK RBRACKET;
 htmlOption: TEMPLATE COLON BACKTICK html BACKTICK;
@@ -25,7 +33,7 @@ importStatement
     ;
 
 componentList
-: 'imports' ':' '[' STRING (',' STRING)* ']';
+:  STRING (',' STRING)* ;
 
   // <<<<<<< ts parser
 
@@ -38,18 +46,6 @@ componentList
             |ID COLON type EQUAL_SIGN literal SEMICOLON     #DeclareAndAssignAttribute
   ;
 
-value
-    : ID                                #ValueID
-    | NUMERIC_VALUE                     #ValueNumber
-    | FALSE                             #ValueFalse
-    | TRUE                              #ValueTrue
-    | STRING                            #ValueString
-    | ID DOT ID                         #ValueProperty
-    | THIS ID                           #ValueThisID
-    | THIS ID DOT ID                    #ValueThisProperty
-    | LBRACE (ID COLON STRING (COMMA ID COLON STRING)*)? RBRACE  #ValueKeyValue
-    | LBRACKET ((value COMMA)* value)? RBRACKET                  #ValueArray
-    ;
 
 
   expression:

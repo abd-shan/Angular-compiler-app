@@ -8,12 +8,14 @@ public class Component {
     private final String selector;
     private final boolean standalone;
     private final List<String> imports;
+    private final List<String> staticImports;
 
     public Component(String className, String selector, boolean standalone, List<String> imports) {
         this.className = className;
         this.selector = selector;
         this.standalone = standalone;
         this.imports = new ArrayList<>(imports);
+        this.staticImports = new ArrayList<>(imports);
     }
 
     public String getClassName() {
