@@ -43,7 +43,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
 
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
-        String selector = ctx.STRING(0).getText().replace("\"", "").replace("'", "");
+        String selector = ctx.STRING().getText().replace("\"", "").replace("'", "");
         boolean standalone = ctx.TRUE() != null;
 
         List<String> staticImports = new ArrayList<>();
@@ -173,8 +173,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public Object visitImageElement(AngularParser.ImageElementContext ctx) {
         AngularParser.ImageContext iCtx = ctx.image();
 
-        String tagName = iCtx.ID(0).getText();
-        String property = iCtx.ANGULAR_ATTRIBUTE_PROPERTY(0).getText();
+        String tagName = iCtx.ID().getText();
+        String property = iCtx.ANGULAR_ATTRIBUTE_PROPERTY().getText();
         scopeStack.push(tagName);
         String currentScope = String.join(" > ", scopeStack);
 
@@ -219,7 +219,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         AngularParser.HElementContext hCtx = ctx.hElement();
 
         String tagName = hCtx.ID(0).getText();
-        String binding=hCtx.ANGULAR_BINDING(0).getText();
+        String binding=hCtx.ANGULAR_BINDING().getText();
         scopeStack.push(tagName);
         String currentScope = String.join(" > ", scopeStack);
 
@@ -242,7 +242,7 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         AngularParser.PElementContext pCtx = ctx.pElement();
 
         String tagName = "p";
-        String binding=pCtx.ANGULAR_BINDING(0).getText();
+        String binding=pCtx.ANGULAR_BINDING().getText();
         scopeStack.push(tagName);
         String currentScope = String.join(" > ", scopeStack);
 
