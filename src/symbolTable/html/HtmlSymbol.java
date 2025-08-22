@@ -1,4 +1,4 @@
-package html;
+package symbolTable.html;
 
 public class HtmlSymbol {
     String name;

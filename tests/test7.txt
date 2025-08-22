@@ -1,8 +1,13 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+
 @Component({
 
   selector: "app-root",
   standalone: true,
-  imports:['Profile'],
+  imports:[ Profile ],
 
   styles: [
     `
@@ -57,22 +62,51 @@
 export class AppComponent {
 
   products:any;
-  selectedProduct:any;
+
+  selectedProduct: any = [];
+
+    currentRoute: string = '/products';
+
+   newProduct: any = {
+      name: '',
+      description: '',
+      image: '',
+      price: '0'
+    };
+
+
+
+  state: {
+      products: [],
+
+      currentRoute: '/products',
+      newProduct: {
+        name: '',
+        description: '',
+        image: '',
+        price: 0
+      }
+    };
+
+
 
 
   constructor() {
     this.products = [
       {
+        sls:'1',
         name: 'Product 1',
         image: 'https://images.pexels.com/photos/4012470/pexels-photo-4012470.jpeg',
         description: 'This is the description for product 1.'
       },
       {
+      sls:'1',
         name: 'Product 2',
         image: 'https://images.pexels.com/photos/3764550/pexels-photo-3764550.jpeg',
         description: 'This is the description for product 2.'
       },
       {
+      sls:'1',
         name: 'Product 3',
         image: 'https://images.pexels.com/photos/3845492/pexels-photo-3845492.jpeg',
         description: 'This is the description for product 3.'
@@ -81,9 +115,99 @@ export class AppComponent {
 
   }
 
-  showDetails(product: any) {
-//    this.selectedProduct = product;
- let a : number= 15;
+  products: any = [
+        {
+          id: 1,
+          name: 'HP Laptop',
+          description: 'Brand new HP Laptop with Intel i7 processor',
+          image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
+          price: 3500
+        },
+
+        {
+          id: 2,
+          name: 'iPhone',
+          description: 'iPhone 14 Pro with advanced camera system',
+          image: 'https://images.pexels.com/photos/1647976/pexels-photo.jpg',
+          price: 4500
+        },
+        {
+          id: 3,
+          name: 'AirPods',
+          description: 'Wireless Apple AirPods',
+          image: 'https://images.pexels.com/photos/3780681/pexels-photo.jpg',
+          price: 800
+        }
+      ];
+
+
+navigate(route: string) {
+    this.currentRoute = route;
   }
 
+
+
+
+ deleteProduct(productId: number) {
+    this.products = this.products.filter(p => p.id !== productId);
+  }
+
+showDetails(productId: number) {
+    this.selectedProduct = this.products.find(p => p.id === productId);
+  }
+
+
+    editProduct(productId: number) {
+        const product = this.products.find(p => p.id === productId);
+        if ( product ) {
+          this.newProduct = { ...product };
+          this.navigate('/add');
+        }
+      }
+
+       // Product Management Methods
+        addProduct() {
+          if (this.newProduct.name && this.newProduct.description && this.newProduct.image && this.newProduct.price) {
+            const newProduct = {
+              ...this.newProduct,
+              id: this.products.length > 0 ? Math.max(...this.products.map(p => p.id)) + 1 : 1
+            };
+            this.products.push( newProduct );
+            this.resetNewProduct();
+            this.currentRoute = '/products';
+          }
+        }
+
+closeModal() {
+    this.selectedProduct = null;
+  }
+
+  onSubmit(event: Event) {
+    event.preventDefault();
+    this.addProduct();
+  }
+
+  private resetNewProduct() {
+    this.newProduct = {
+      name: '',
+      description: '',
+      image: '',
+      price: 0
+    };
+  }
+
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

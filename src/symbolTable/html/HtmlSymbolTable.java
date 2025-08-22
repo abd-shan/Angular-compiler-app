@@ -1,4 +1,4 @@
-package html;
+package symbolTable.html;
 
 import java.util.ArrayList;
 

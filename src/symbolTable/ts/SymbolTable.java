@@ -1,5 +1,6 @@
-package ts;
+package symbolTable.ts;
 
+import ts.Kind;
 import ts.types.Type;
 
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package visitors;
+package symbolTable.component;
 
 import java.util.*;
 

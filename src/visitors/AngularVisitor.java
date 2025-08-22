@@ -6,13 +6,14 @@ import java.util.regex.Pattern;
 import css.Css;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
-import html.DivChild.ParagraphWrapper;
 import html.DivNode;
 import html.Html;
-import html.HtmlSymbol;
-import html.HtmlSymbolTable;
-import org.antlr.v4.runtime.tree.ParseTree;
+import symbolTable.html.HtmlSymbolTable;
 import program.Program;
+import symbolTable.component.Component;
+import symbolTable.component.ComponentTable;
+import symbolTable.ts.Symbol;
+import symbolTable.ts.SymbolTable;
 import ts.*;
 import ts.expressions.Attribute;
 import ts.expressions.Expression;
@@ -134,16 +135,16 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         return new DivNode(tagName, attributes, children);
     }
 
-
-    @Override
-    public Object visitClassOrId(AngularParser.ClassOrIdContext ctx) {
-        return new ClassOrId(ctx.ATTRIBUTE().getText());
-    }
-
-    @Override
-    public Object visitNgDirective(AngularParser.NgDirectiveContext ctx) {
-        return new NgDirective(ctx.getText());
-    }
+//
+//    @Override
+////    public Object visitClassOrId(AngularParser.ClassOrIdContext ctx) {
+////        return new ClassOrId(ctx.ATTRIBUTE().getText());
+////    }
+//
+//    @Override
+//    public Object visitNgDirective(AngularParser.NgDirectiveContext ctx) {
+//        return new NgDirective(ctx.getText());
+//    }
 
     @Override
     public Object visitEventBinding(AngularParser.EventBindingContext ctx) {
@@ -272,8 +273,8 @@ public class AngularVisitor extends AngularParserBaseVisitor {
     public Object visitTs(AngularParser.TsContext ctx) {
         TypeScript typeScript = new TypeScript();
 
-        for (int i = 0; i < ctx.attribute().size(); i++) {
-            Attribute attribute = (Attribute) visit(ctx.attribute(i));
+        for (int i = 0; i < ctx.tsAttribute().size(); i++) {
+            Attribute attribute = (Attribute) visit(ctx.tsAttribute(i));
             typeScript.addAttribute(attribute);
         }
 
