@@ -1,24 +1,12 @@
 package program;
 
 import state.*;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * يمثل ملف State في Angular
- * يحتوي على:
- *  - import statements
- *  - state interfaces
- *  - state variables
- *  - state actions
- *  - state reducers
- *  - state service classes
- */
-public class StateFile {
-
+public class StateFile implements AngularFile {
     private final List<String> importStatements = new ArrayList<>();
     private final List<StateInterface> interfaces = new ArrayList<>();
     private final List<StateVariable> variables = new ArrayList<>();
@@ -28,8 +16,9 @@ public class StateFile {
 
     // ===== Import Statements =====
     public void addImport(String importStmt) {
-        Objects.requireNonNull(importStmt);
-        importStatements.add(importStmt);
+        if (importStmt != null && !importStmt.trim().isEmpty()) {
+            importStatements.add(importStmt);
+        }
     }
 
     public List<String> getImportStatements() {
@@ -38,8 +27,9 @@ public class StateFile {
 
     // ===== Interfaces =====
     public void addInterface(StateInterface iface) {
-        Objects.requireNonNull(iface);
-        interfaces.add(iface);
+        if (iface != null) {
+            interfaces.add(iface);
+        }
     }
 
     public List<StateInterface> getInterfaces() {
@@ -48,8 +38,9 @@ public class StateFile {
 
     // ===== Variables =====
     public void addVariable(StateVariable var) {
-        Objects.requireNonNull(var);
-        variables.add(var);
+        if (var != null) {
+            variables.add(var);
+        }
     }
 
     public List<StateVariable> getVariables() {
@@ -58,8 +49,9 @@ public class StateFile {
 
     // ===== Actions =====
     public void addAction(StateAction action) {
-        Objects.requireNonNull(action);
-        actions.add(action);
+        if (action != null) {
+            actions.add(action);
+        }
     }
 
     public List<StateAction> getActions() {
@@ -68,8 +60,9 @@ public class StateFile {
 
     // ===== Reducers =====
     public void addReducer(StateReducer reducer) {
-        Objects.requireNonNull(reducer);
-        reducers.add(reducer);
+        if (reducer != null) {
+            reducers.add(reducer);
+        }
     }
 
     public List<StateReducer> getReducers() {
@@ -78,8 +71,9 @@ public class StateFile {
 
     // ===== Service Classes =====
     public void addServiceClass(StateServiceClass serviceClass) {
-        Objects.requireNonNull(serviceClass);
-        serviceClasses.add(serviceClass);
+        if (serviceClass != null) {
+            serviceClasses.add(serviceClass);
+        }
     }
 
     public List<StateServiceClass> getServiceClasses() {
@@ -97,6 +91,4 @@ public class StateFile {
         sb.append("Services: ").append(serviceClasses).append("\n");
         return sb.toString();
     }
-
-    // يمكن إضافة وظائف لاحقة: semantic checks أو code generation هنا
 }

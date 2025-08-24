@@ -5,6 +5,7 @@ import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
 import html.HtmlTemplate;
 import program.AngularApp;
+import program.AngularFile;
 import program.ComponentFile;
 import program.StateFile;
 import state.*;
@@ -17,28 +18,31 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 
 
+    @Override
     public AngularApp visitAngularApp(AngularParser.AngularAppContext ctx) {
         AngularApp app = new AngularApp();
 
-
         for (AngularParser.AngularFileContext fileCtx : ctx.angularFile()) {
-            ComponentFile file = visitAngularFile(fileCtx);
-            app.addProgram(file);
+            AngularFile file = visitAngularFile(fileCtx); //    ComponentFile or StateFile
+            app.addFile( file);
         }
 
         return app;
     }
 
     @Override
-    public ComponentFile visitAngularFile(AngularParser.AngularFileContext ctx) {
+    public AngularFile visitAngularFile(AngularParser.AngularFileContext ctx) {
         if (ctx.componentFile() != null) {
-            return (ComponentFile) visitComponentFile(ctx.componentFile());
+            return visitComponentFile(ctx.componentFile()); // ComponentFile
         }
 
+        if (ctx.stateFile() != null) {
+            return visitStateFile(ctx.stateFile()); // StateFile
+        }
 
-        //  stateFile
-        return null;
+        throw new RuntimeException("Unknown AngularFile type: " + ctx.getText());
     }
+
 
     @Override
     public StateFile visitStateFile(AngularParser.StateFileContext ctx) {

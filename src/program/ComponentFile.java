@@ -20,7 +20,7 @@ import java.util.Objects;
  */
 
 
-public class ComponentFile {
+public class ComponentFile implements AngularFile {
     private final String className;
     private final String selector;
     private final boolean standalone;
