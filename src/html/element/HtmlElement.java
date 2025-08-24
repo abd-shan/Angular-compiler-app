@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HtmlElement implements HtmlNode {
-    private String tagName;                        // مثل div, input
-    private List<HtmlAttribute> attributes;        // جميع الخصائص
+    private String tagName;                        // like div, input
+    private List<HtmlAttribute> attributes;        // attribute
     private List<Object> children;                 // node: HtmlElement, Interpolation, TextNode
 
     public HtmlElement(String tagName) {

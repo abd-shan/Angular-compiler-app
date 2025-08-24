@@ -18,7 +18,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     public AngularApp visitAngularApp(AngularParser.AngularAppContext ctx) {
         AngularApp app = new AngularApp();
 
-        // زيارة كل angularFile وإضافته إلى AngularApp
+
         for (AngularParser.AngularFileContext fileCtx : ctx.angularFile()) {
             AngularFile file = visitAngularFile(fileCtx);
             app.addProgram(file);
@@ -32,7 +32,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         if (ctx.componentFile() != null) {
             return (AngularFile) visitComponentFile(ctx.componentFile());
         }
-        // لاحقًا نضيف stateFile
+        //  stateFile
         return null;
     }
 
@@ -87,29 +87,29 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     }
 
     public AngularFile visitComponentFile(AngularParser.ComponentFileContext ctx) {
-        // قراءة selector
+        //  selector
         String selector = ctx.STRING().getText().replace("\"", "").replace("'", "");
 
-        // قراءة standalone (اختياري)
+
         boolean standalone = false;
         if (ctx.STANDALONE() != null) {
             standalone = ctx.TRUE() != null;
         }
 
-        // قراءة imports داخل @Component
+
         List<String> componentImports = new ArrayList<>();
         if (ctx.componentList() != null) {
             ctx.componentList().ID().forEach(id -> componentImports.add(id.getText()));
         }
 
-        // قراءة class name
+
         String className = ctx.ID(ctx.ID().size() - 1).getText();
 
-        // HtmlTemplate & Stylesheet (نجعلها null مبدئيًا)
+
         HtmlTemplate template = null;
         Stylesheet styles = null;
 
-        // TypeScript code (نجعلها null مؤقتًا، لاحقًا نزور ts)
+
         TypeScript tsCode = new TypeScript(); // placeholder
 
         return new AngularFile(className, selector, standalone, componentImports, template, styles, tsCode);
