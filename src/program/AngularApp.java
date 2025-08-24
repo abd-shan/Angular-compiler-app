@@ -9,7 +9,6 @@ public class AngularApp {
     private final List<AngularFile> angularFiles = new ArrayList<>();
 
     public void addProgram(AngularFile angularFile) {
-        Objects.requireNonNull(angularFile, "program is null");
         this.angularFiles.add(angularFile);
     }
 

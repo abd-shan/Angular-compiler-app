@@ -1,20 +1,39 @@
 package visitors;
 
+import css.Stylesheet;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
+import html.HtmlTemplate;
+import program.AngularApp;
+import program.AngularFile;
+import ts.TypeScript;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 
 
-    @Override
-    public Object visitAngularApp(AngularParser.AngularAppContext ctx) {
-        return super.visitAngularApp(ctx);
+    public AngularApp visitAngularApp(AngularParser.AngularAppContext ctx) {
+        AngularApp app = new AngularApp();
+
+        // زيارة كل angularFile وإضافته إلى AngularApp
+        for (AngularParser.AngularFileContext fileCtx : ctx.angularFile()) {
+            AngularFile file = visitAngularFile(fileCtx);
+            app.addProgram(file);
+        }
+
+        return app;
     }
 
     @Override
-    public Object visitAngularFile(AngularParser.AngularFileContext ctx) {
-        return super.visitAngularFile(ctx);
+    public AngularFile visitAngularFile(AngularParser.AngularFileContext ctx) {
+        if (ctx.componentFile() != null) {
+            return (AngularFile) visitComponentFile(ctx.componentFile());
+        }
+        // لاحقًا نضيف stateFile
+        return null;
     }
 
     @Override
@@ -67,9 +86,33 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return super.visitReducerOnList(ctx);
     }
 
-    @Override
-    public Object visitComponentFile(AngularParser.ComponentFileContext ctx) {
-        return super.visitComponentFile(ctx);
+    public AngularFile visitComponentFile(AngularParser.ComponentFileContext ctx) {
+        // قراءة selector
+        String selector = ctx.STRING().getText().replace("\"", "").replace("'", "");
+
+        // قراءة standalone (اختياري)
+        boolean standalone = false;
+        if (ctx.STANDALONE() != null) {
+            standalone = ctx.TRUE() != null;
+        }
+
+        // قراءة imports داخل @Component
+        List<String> componentImports = new ArrayList<>();
+        if (ctx.componentList() != null) {
+            ctx.componentList().ID().forEach(id -> componentImports.add(id.getText()));
+        }
+
+        // قراءة class name
+        String className = ctx.ID(ctx.ID().size() - 1).getText();
+
+        // HtmlTemplate & Stylesheet (نجعلها null مبدئيًا)
+        HtmlTemplate template = null;
+        Stylesheet styles = null;
+
+        // TypeScript code (نجعلها null مؤقتًا، لاحقًا نزور ts)
+        TypeScript tsCode = new TypeScript(); // placeholder
+
+        return new AngularFile(className, selector, standalone, componentImports, template, styles, tsCode);
     }
 
     @Override

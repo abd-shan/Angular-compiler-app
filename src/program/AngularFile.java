@@ -78,7 +78,7 @@ public class AngularFile {
 
     @Override
     public String toString() {
-        return "Program{" +
+        return "angularFile{" +
                 "className='" + className + '\'' +
                 ", selector='" + selector + '\'' +
                 ", standalone=" + standalone +
