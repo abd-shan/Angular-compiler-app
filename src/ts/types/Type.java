@@ -1,5 +1,6 @@
 package ts.types;
 
-public abstract class Type{
+public interface Type {
+    String toString();
 }
 
