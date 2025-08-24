@@ -1,4 +1,3 @@
 package html;
 
-public interface HtmlOption {
-}
+public interface HtmlOption { }

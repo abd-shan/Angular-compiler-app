@@ -1,212 +1,570 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, RouterOutlet } from '@angular/router';
 
 @Component({
-
-  selector: "app-root",
+  selector: 'app-root',
   standalone: true,
-  imports:[ Profile ],
+  imports: [CommonModule, RouterOutlet, RouterModule],
+  styles: [`
+    .app-container {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-  styles: [
-    `
-      .container {
-        display: flex;
-        margin: 0;
-        padding: 0;
-      }
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
 
-      #left {
-        width: 70%;
-        padding: 20px;
-        border-right: 2px solid #ccc;
-      }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
 
-      #right {
-        width: 30%;
-        padding: 20px;
-        overflow-y: auto;
-      }
+    .nav-links a {
+      text-decoration: none;
+      color: #333;
+      padding: 8px 16px;
+      border-radius: 4px;
+    }
 
-      .product {
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin: 10px 0;
-        cursor: pointer;
-      }
 
-      .product img {
-        width: 50px;
-        height: 50px;
-        margin-right: 10px;
-      }
 
-      .detailsBox img {
-        width: 200px;
-        height: 200px;
-      }
-    `
-  ],
+    .nav-links a.active{
+      background-color: #007bff;
+      color: white;
+    }
+
+    .main-content {
+      padding: 20px;
+    }
+  `],
   template: `
-    <div class="container">
-    <Profile></Profile>
-      <div id="left" class="detailsBox" *ngIf="selectedProduct">
-        <h2>{{ selectedProduct.name }}</h2>
-        <img [src]="selectedProduct.image">
-        <p>{{ selectedProduct.description }}</p>
-      </div>
+    <div class="app-container">
+      <nav class="navbar">
+        <h1>Product Management</h1>
+        <div class="nav-links">
+          <a routerLink="/products" routerLinkActive="active">Products</a>
+          <a routerLink="/add" routerLinkActive="active">Add Product</a>
+        </div>
+      </nav>
+
+      <main class="main-content">
+        <router-outlet></router-outlet>
+      </main>
     </div>
   `,
 })
-export class AppComponent {
-
-  products:any;
-
-  selectedProduct: any = [];
-
-    currentRoute: string = '/products';
-
-   newProduct: any = {
-      name: '',
-      description: '',
-      image: '',
-      price: '0'
-    };
-
-
-
-  state: {
-      products: [],
-
-      currentRoute: '/products',
-      newProduct: {
-        name: '',
-        description: '',
-        image: '',
-        price: 0
-      }
-    };
-
-
-
-
-  constructor() {
-    this.products = [
-      {
-        sls:'1',
-        name: 'Product 1',
-        image: 'https://images.pexels.com/photos/4012470/pexels-photo-4012470.jpeg',
-        description: 'This is the description for product 1.'
-      },
-      {
-      sls:'1',
-        name: 'Product 2',
-        image: 'https://images.pexels.com/photos/3764550/pexels-photo-3764550.jpeg',
-        description: 'This is the description for product 2.'
-      },
-      {
-      sls:'1',
-        name: 'Product 3',
-        image: 'https://images.pexels.com/photos/3845492/pexels-photo-3845492.jpeg',
-        description: 'This is the description for product 3.'
-      }
-    ];
-
-  }
-
-  products: any = [
-        {
-          id: 1,
-          name: 'HP Laptop',
-          description: 'Brand new HP Laptop with Intel i7 processor',
-          image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
-          price: 3500
-        },
-
-        {
-          id: 2,
-          name: 'iPhone',
-          description: 'iPhone 14 Pro with advanced camera system',
-          image: 'https://images.pexels.com/photos/1647976/pexels-photo.jpg',
-          price: 4500
-        },
-        {
-          id: 3,
-          name: 'AirPods',
-          description: 'Wireless Apple AirPods',
-          image: 'https://images.pexels.com/photos/3780681/pexels-photo.jpg',
-          price: 800
-        }
-      ];
-
-
-navigate(route: string) {
-    this.currentRoute = route;
-  }
-
-
-
-
- deleteProduct(productId: number) {
-    this.products = this.products.filter(p => p.id !== productId);
-  }
-
-showDetails(productId: number) {
-    this.selectedProduct = this.products.find(p => p.id === productId);
-  }
-
-
-    editProduct(productId: number) {
-        const product = this.products.find(p => p.id === productId);
-        if ( product ) {
-          this.newProduct = { ...product };
-          this.navigate('/add');
-        }
-      }
-
-       // Product Management Methods
-        addProduct() {
-          if (this.newProduct.name && this.newProduct.description && this.newProduct.image && this.newProduct.price) {
-            const newProduct = {
-              ...this.newProduct,
-              id: this.products.length > 0 ? Math.max(...this.products.map(p => p.id)) + 1 : 1
-            };
-            this.products.push( newProduct );
-            this.resetNewProduct();
-            this.currentRoute = '/products';
-          }
-        }
-
-closeModal() {
-    this.selectedProduct = null;
-  }
-
-  onSubmit(event: Event) {
-    event.preventDefault();
-    this.addProduct();
-  }
-
-  private resetNewProduct() {
-    this.newProduct = {
-      name: '',
-      description: '',
-      image: '',
-      price: 0
-    };
-  }
-
-
+export class App {
+  title = 'Product Management App';
 }
 
 
 
+import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
+
+export interface Product {
+  id: number;
+  name: string;
+  description: string;
+  image: string;
+  price: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+
+
+export class ProductService {
+  private products = new BehaviorSubject< Product []>([
+    {
+      id: 1,
+      name: 'HP Laptop',
+      description: 'Brand new HP Laptop with Intel i7 processor',
+      image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
+      price: 3500
+    },
+    {
+      id: 2,
+      name: 'iPhone',
+      description: 'iPhone 14 Pro with advanced camera system',
+      image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
+      price: 4500
+    },
+    {
+      id: 3,
+      name: 'AirPods',
+      description: 'Wireless Apple AirPods',
+      image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
+      price: 800
+    }
+  ]);
+
+  products$ = this.products.asObservable();
+
+  addProduct(product: Omit<Product, 'id'>) {
+    const currentProducts = this.products.value;
+    const newProduct = {
+      ...product,
+      id: this.generateId()
+    };
+    this.products.next([...currentProducts, newProduct]);
+  }
+
+  updateProduct(updatedProduct: Product) {
+    const currentProducts = this.products.value;
+    const index = currentProducts.findIndex(p => p.id === updatedProduct.id);
+
+    if (index !== -1) {
+      currentProducts[ index] = updatedProduct;
+      this.products.next([...currentProducts]);
+    }
+  }
+
+  deleteProduct(id: number) {
+    const currentProducts = this.products.value;
+    this.products.next(currentProducts.filter(p => p.id !== id));
+  }
+
+  getProduct(id: number): Product | undefined {
+    return this.products.value.find(p => p.id === id);
+  }
+
+  private generateId(): number {
+    return Math.floor(Math.random() * 1000);
+  }
+}
+
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { ProductService } from '../product.service';
+
+@Component({
+  selector: 'app-product-list',
+  standalone: true,
+  imports: [ CommonModule],
+
+  styles: [`
+    .product-list {
+      padding: 20px;
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .product-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .product-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .product-card h3 {
+      margin: 10px 0;
+      color: #333;
+    }
+
+    .product-card .description {
+      color: #666;
+      margin: 5px 0;
+      height: 60px;
+      overflow: hidden;
+    }
+
+    .product-card .price {
+      color: #28a745;
+      font-size: 1.1em;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .actions button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-details {
+      background: #007bff;
+      color: white;
+    }
+
+    .btn-edit {
+      background: #ffc107;
+      color: black;
+    }
+
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+    }
+  `],
+  template: `
+      <div class="product-list">
+        <h2>Product List</h2>
+
+        <div class="products-grid">
+          <div class="product-card" *ngFor="let product of products">
+            <img [src]="product.image" [alt]="product.name">
+            <h3>{{ product.name }}</h3>
+            <p class="description">{{ product.description }}</p>
+            <p class="price"><strong>Price: {{ product.price }} SAR</strong></p>
+            <div class="actions">
+              <button class="btn-details" (click)="viewDetails(product.id)">View Details</button>
+              <button class="btn-edit" (click)="editProduct(product.id)">Edit</button>
+              <button class="btn-delete" (click)="deleteProduct(product.id)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+})
+export class ProductListComponent implements OnInit {
+  products: any[] = [];
+
+  constructor(
+    private productService: ProductService,
+    private router: Router
+  ) {}
+
+  ngOnInit() {
+    this.productService.products$.subscribe( products => {
+      this.products = products;
+    });
+  }
+
+  viewDetails(productId: number) {
+    this.router.navigate(['/product', productId]);
+  }
+
+  editProduct(productId: number) {
+    this.router.navigate(['/edit', productId]);
+  }
+
+  deleteProduct(productId: number) {
+    if (confirm('Are you sure you want to delete this product?')) {
+      this.productService.deleteProduct( productId);
+    }
+  }
+}
+
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ProductService } from '../product.service';
+
+@Component({
+  selector: 'app-product-detail',
+  standalone: true,
+  imports: [ CommonModule],
+
+  styles: [`
+    .product-detail {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .btn-back {
+      background: #6c757d;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .detail-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .detail-card img {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .detail-card h2 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .detail-card .description {
+      color: #666;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .detail-card .price {
+      color: #28a745;
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+
+    .btn-edit {
+      background: #ffc107;
+      color: black;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .not-found {
+      text-align: center;
+      padding: 40px;
+    }
+  `],
+   template: `
+      <div class="product-detail">
+        <button class="btn-back" (click)="goBack()"> Back to Products</button>
+
+        <div class="detail-card" *ngIf="product">
+          <h2>{{ product.name }}</h2>
+          <img [src]="product.image" [alt]="product.name">
+          <p class="description">{{ product.description }}</p>
+          <p class="price"><strong>Price: {{ product.price }} SAR</strong></p>
+          <button class="btn-edit" (click)="editProduct(product.id)">Edit Product</button>
+        </div>
+
+        <div *ngIf="!product" class="not-found">
+          <p>Product not found</p>
+          <button class="btn-back" (click)="goBack()">Back to Products</button>
+        </div>
+      </div>
+    `,
+})
+export class ProductDetailComponent implements OnInit {
+  product: any;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private productService: ProductService
+  ) {}
+
+  ngOnInit() {
+    const productId = Number(this.route.snapshot.paramMap.get('id'));
+    this.product = this.productService.getProduct( productId);
+  }
+
+  goBack() {
+    this.router.navigate(['/products']);
+  }
+
+  editProduct(productId: number) {
+    this.router.navigate(['/edit', productId]);
+  }
+}
 
 
 
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ProductService } from '../product.service';
 
+@Component({
+  selector: 'app-add-edit-product',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
 
+  styles: [`
+    .add-edit-product {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
+    .btn-back {
+      background: #6c757d;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .product-form {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .form-group textarea {
+      height: 100px;
+      resize: vertical;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .form-actions button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .form-actions button {
+      background: #007bff;
+      color: white;
+    }
+
+    .btn-cancel {
+      background: #6c757d;
+      color: white;
+    }
+  `],
+  template: `
+    <div class="add-edit-product">
+      <button class="btn-back" (click)="goBack()"> Back to Products</button>
+
+      <h2>{{ isEditMode ? 'Edit Product' : 'Add New Product' }}</h2>
+
+      <form class="product-form" (submit)="isEditMode ? updateProduct() : addProduct(); $event.preventDefault()">
+        <div class="form-group">
+          <label for="name">Product Name</label>
+          <input type="text" id="name" [(ngModel)]="product.name" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" [(ngModel)]="product.description" name="description" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="image">Image URL</label>
+          <input type="text" id="image" [(ngModel)]="product.image" name="image" required>
+        </div>
+
+        <div class="form-group">
+          <label for="price">Price SAR</label>
+          <input type="number" id="price" [(ngModel)]="product.price" name="price" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit">{{ isEditMode ? 'Update' : 'Add' }} Product</button>
+          <button type="button" class="btn-cancel" (click)="goBack()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  `,
+})
+export class AddEditProductComponent implements OnInit {
+  product: any = {
+    name: '',
+    description: '',
+    image: '',
+    price: 0
+  };
+
+  isEditMode = false;
+  productId: number | null   = null;
+
+  constructor(
+    private productService: ProductService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id');
+
+    if ( id) {
+      this.isEditMode = true;
+      this.productId = Number( id);
+      const existingProduct = this.productService.getProduct( this.productId);
+
+      if ( existingProduct) {
+        this.product = { ...existingProduct };
+      }
+    }
+  }
+
+  addProduct() {
+    if (this.product.name && this.product.description && this.product.image && this.product.price) {
+      this.productService.addProduct( this.product);
+      this.goBack();
+    }
+  }
+
+  updateProduct() {
+    if (this.productId && this.product.name && this.product.description && this.product.image && this.product.price) {
+      const updatedProduct = { ...this.product, id: this.productId };
+      this.productService.updateProduct(  updatedProduct);
+      this.goBack();
+    }
+  }
+
+  goBack() {
+    this.router.navigate(['/products']);
+  }
+}
 
 
 

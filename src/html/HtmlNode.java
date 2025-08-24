@@ -1,4 +1,3 @@
 package html;
 
-public interface HtmlNode {
-}
+public interface HtmlNode { }

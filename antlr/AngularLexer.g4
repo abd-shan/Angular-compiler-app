@@ -19,11 +19,12 @@ CLASS:'class';
 EXPORT:'export';
 SELECTOR:'selector';
 STYLES_URL:'styleUrl';
+PROVIDERS: 'providers';
+IMPLEMENTS:'implements';
 
 
 
 
-ROUTER: 'router';
 
 LBRACE: '{'; RBRACE: '}';
 LPARENTHESIS: '('; RPARENTHESIS: ')';
@@ -37,6 +38,18 @@ ARROW: '=>';
 
 // ===== State Management =====
 STATE: 'state';
+AT_INJECTABLE: '@Injectable';
+PROVIDED_IN: 'providedIn';
+INTERFACE: 'interface';
+OBSERVABLE: 'Observable';
+SUBJECT: 'Subject';
+ASYNC: 'async';
+PIPE: '|';
+MAP: 'map';
+CREATE_ACTION : 'createAction';
+CREATE_REDUCER: 'createReducer';
+ON            : 'on';
+
 
 // ===== TypeScript =====
 EQUAL_SIGN: '=';
@@ -44,6 +57,7 @@ NUMBER: 'number'; STRINGDL: 'string'; BOOLEAN: 'boolean'; ANY: 'any'; VOID: 'voi
 LET: 'let'; IF: 'if'; FOR: 'for'; CONSTRUCTOR: 'constructor'; CONST:'const';
 RETURN: 'return'; SWITCH: 'switch'; CASE: 'case'; DEFAULT: 'default'; BREAK: 'break';
 EVENT:'Event';
+NEW:'new';
 // primitive data type
 PUBLIC:'public';
 PRIVATE:'private';
@@ -51,20 +65,33 @@ PROTECTED:'protected';
 READONLY: 'readonly';
 
 
+
+
 // ===== This and Spread =====
+
 THIS: 'this';
 DOT: '.';
 ELLIPSIS: '...';
 
 // ===== TS Operations =====
+
 PLUS: '+'; MINUS: '-'; STAR: '*'; SLASH: '/';
 AND_OP: '&&'; OR_OP: '||'; NOT_OP: '!';
 EQEQ: '=='; EQEQEQ: '==='; NEQ: '!='; NEQEQ: '!==';
 LTE : '<=';
 GTE : '>=';
+PLUS_EQUAL: '+=';
+MINUS_EQUAL: '-=';
+STAR_EQUAL: '*=';
+SLASH_EQUAL: '/=';
+PERCENT: '%';
+TILDE: '~';
+UNDEFINED: 'undefined';
+VAR: 'var';
+
 
 // ===== Angular Template tokens =====
-ANGULAR_DIRECTIVE : '*' ID;                 // *ngIf, *ngFor
+//ANGULAR_DIRECTIVE : '*' ID;                 // *ngIf, *ngFor
 ANGULAR_EVENT     : '(' ID ')';             // (click)
 ANGULAR_PROPERTY  : '[' ID ']';             // [src], [class.active]
 ANGULAR_TWO_WAY   : '[(' ID ')]';           // [(ngModel)]
@@ -75,9 +102,12 @@ TAG_OPEN : '<';
 TAG_CLOSE : '>';
 TAG_OPEN_SELF : '</';
 TAG_CLOSE_SELF:'/>';
+NG_IF  : '*ngIf';
+NG_FOR : '*ngFor';
+
 
 ATTRIBUTE : ID EQUAL_SIGN STRING;
-ANGULAR_ATTRIBUTE_DIRECTIVE : ANGULAR_DIRECTIVE EQUAL_SIGN STRING ;
+//ANGULAR_ATTRIBUTE_DIRECTIVE : ANGULAR_DIRECTIVE EQUAL_SIGN STRING ;
 ANGULAR_ATTRIBUTE_PROPERTY  : ANGULAR_PROPERTY  EQUAL_SIGN STRING ;
 ANGULAR_ATTRIBUTE_EVENT     : ANGULAR_EVENT     EQUAL_SIGN STRING ;
 ANGULAR_ATTRIBUTE_TWO_WAY   : ANGULAR_TWO_WAY   EQUAL_SIGN STRING ;
@@ -119,6 +149,15 @@ BOX_SIZING:'box-sizing';
 MAGIN_TOP:'margin-top';
 OBJECT_FIT:'object-fit';
 Z_INDEX:'z-index';
+TEXT_DECORATION:'text-decoration';
+FONT_WEIGHT:'font-weight';
+RESIZE:'resize';
+TSXT_ALIGN:'text-align';
+FONT_SIZE:'font-size';
+GRID_TEMPLATE_COLUMNS:'grid-template-columns';
+BOX_SHADOW:'box-shadow';
+FLEX_DIRECTION:'flex-direction';
+OVERFLOW:'overflow';
 
 
 // Property values
@@ -138,10 +177,10 @@ CSS_SELECTOR: ('.'|'#') [a-zA-Z_-][a-zA-Z_0-9-.]*  ([a-zA-Z_0-9]*)?;
 
 // ===== Identifiers & misc =====
 
-ID: [a-zA-Z][a-zA-Z_0-9-.]*;
-
+ID: [a-zA-Z][a-zA-Z_0-9-.$]*;
 WS: [ \t\r\n]+ -> skip;
 COMMENT: '//' ~[\r\n]* -> skip;
 SPACE: ' ';
+
 
 

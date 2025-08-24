@@ -1,4 +1,5 @@
 package ts.statements;
 
-public class TsStatement {
+public interface TsStatement {
+    String toString();
 }

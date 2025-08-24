@@ -2,19 +2,14 @@ package html;
 
 import java.util.ArrayList;
 import java.util.List;
-
 public class HtmlTemplate {
-    private List<HtmlNode> nodes;
+    private final HtmlOption option;
 
-    public HtmlTemplate() {
-        this.nodes = new ArrayList<>();
+    public HtmlTemplate(HtmlOption option) {
+        this.option = option;
     }
 
-    public void addNode(HtmlNode node) {
-        nodes.add(node);
-    }
-
-    public List<HtmlNode> getNodes() {
-        return nodes;
+    public HtmlOption getOption() {
+        return option;
     }
 }

@@ -1,59 +1,40 @@
 package ts;
 
-import ts.expressions.Attribute;
-import ts.types.Type;
+
+import ts.statements.TsStatement;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
 
 public class TypeScript {
-
-    public ArrayList<Attribute> attributes;
-    public LinkedList<Method> methods;
-    public Constructor constructor;
-
+    private List<TsStatement> statements;
 
     public TypeScript() {
-        constructor = new Constructor();
-        attributes = new ArrayList<>();
-        methods = new LinkedList<>();
+        this.statements = new ArrayList<>();
     }
 
-    public void addAttribute(Attribute attribute) {
-        attributes.add(attribute);
+    public TypeScript(List<TsStatement> statements) {
+        this.statements = statements;
     }
 
-    public LinkedList<Method> getMethods() {
-        return methods;
+    public void addStatement(TsStatement statement) {
+        this.statements.add(statement);
     }
 
-    public void setMethods(LinkedList<Method> methods) {
-        this.methods = methods;
+    public List<TsStatement> getStatements() {
+        return statements;
     }
 
-    public Constructor getConstructor() {
-        return constructor;
+    public void setStatements(List<TsStatement> statements) {
+        this.statements = statements;
     }
-
-    public void setConstructor(Constructor constructor) {
-        this.constructor = constructor;
-    }
-
-    public void addMethod(Method method) {
-        methods.add(method);
-    }
-
 
     @Override
     public String toString() {
-
-        return "{" +
-                "\n attributes:" + attributes +
-                ",\n methods:" + methods +
-                ",\n constructor:" + constructor +
-                "\n}";
-
+        StringBuilder sb = new StringBuilder();
+        for (TsStatement statement : statements) {
+            sb.append(statement.toString()).append("\n");
+        }
+        return sb.toString();
     }
 }

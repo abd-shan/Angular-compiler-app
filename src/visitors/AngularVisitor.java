@@ -1,531 +1,275 @@
 package visitors;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import css.Css;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
-import html.DivNode;
-import html.Html;
-import symbolTable.html.HtmlSymbolTable;
-import program.Program;
-import symbolTable.component.Component;
-import symbolTable.component.ComponentTable;
-import symbolTable.ts.Symbol;
-import symbolTable.ts.SymbolTable;
-import ts.*;
-import ts.expressions.Attribute;
-import ts.expressions.Expression;
-import ts.expressions.Variable;
-import ts.types.*;
-import ts.types.Number;
-import html.DivChild.*;
-import html.Paragraph.*;
-import html.DivAttribute.*;
 
-
-
-
-public class AngularVisitor extends AngularParserBaseVisitor {
-    Program program;
-    String scope = "";
-    public SymbolTable symbolTable = new SymbolTable();
-    Stack<String> scopeStack = new Stack<>();
-
-    public LinkedList<String> errors = new LinkedList<>();
-    public ComponentTable componentTable=new ComponentTable();
-    private String currentComponentName = "";
-    public HtmlSymbolTable htmlSymbolTable = new HtmlSymbolTable();
-
-
+public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 
 
     @Override
-    public Object visitProgram(AngularParser.ProgramContext ctx) {
-        String selector = ctx.STRING().getText().replace("\"", "").replace("'", "");
-        boolean standalone = ctx.TRUE() != null;
-
-        List<String> staticImports = new ArrayList<>();
-
-
-        if (ctx.componentList() != null) {
-            for (var s : ctx.componentList().STRING()) {
-                staticImports.add(s.getText().replace("\"", "").replace("'", ""));
-            }
-        }
-
-        String className = ctx.ID().getText();
-        currentComponentName = className;
-
-        Component component = new Component(className, selector, standalone, staticImports);
-        componentTable.addComponent(component);
-
-        for (var imp : ctx.importStatement()) {
-            String importedClass = imp.ID().getText();
-            componentTable.registerImport(importedClass);
-
-            component.getImports().add(importedClass);
-        }
-
-        Css css = (Css) visitCssOption(ctx.cssOption());
-        TypeScript ts = (TypeScript) visitTs(ctx.ts());
-        Html html = (Html) visitHtmlOption(ctx.htmlOption());
-
-        program = new Program(html, css, ts);
-        return program;
+    public Object visitAngularApp(AngularParser.AngularAppContext ctx) {
+        return super.visitAngularApp(ctx);
     }
 
+    @Override
+    public Object visitAngularFile(AngularParser.AngularFileContext ctx) {
+        return super.visitAngularFile(ctx);
+    }
+
+    @Override
+    public Object visitStateFile(AngularParser.StateFileContext ctx) {
+        return super.visitStateFile(ctx);
+    }
+
+    @Override
+    public Object visitStateServiceClass(AngularParser.StateServiceClassContext ctx) {
+        return super.visitStateServiceClass(ctx);
+    }
+
+    @Override
+    public Object visitInjectableDecorator(AngularParser.InjectableDecoratorContext ctx) {
+        return super.visitInjectableDecorator(ctx);
+    }
+
+    @Override
+    public Object visitInjectableOptions(AngularParser.InjectableOptionsContext ctx) {
+        return super.visitInjectableOptions(ctx);
+    }
+
+    @Override
+    public Object visitStateInterface(AngularParser.StateInterfaceContext ctx) {
+        return super.visitStateInterface(ctx);
+    }
+
+    @Override
+    public Object visitStateInterfaceProperty(AngularParser.StateInterfacePropertyContext ctx) {
+        return super.visitStateInterfaceProperty(ctx);
+    }
+
+    @Override
+    public Object visitStateVariable(AngularParser.StateVariableContext ctx) {
+        return super.visitStateVariable(ctx);
+    }
+
+    @Override
+    public Object visitStateAction(AngularParser.StateActionContext ctx) {
+        return super.visitStateAction(ctx);
+    }
+
+    @Override
+    public Object visitStateReducer(AngularParser.StateReducerContext ctx) {
+        return super.visitStateReducer(ctx);
+    }
+
+    @Override
+    public Object visitReducerOnList(AngularParser.ReducerOnListContext ctx) {
+        return super.visitReducerOnList(ctx);
+    }
+
+    @Override
+    public Object visitComponentFile(AngularParser.ComponentFileContext ctx) {
+        return super.visitComponentFile(ctx);
+    }
+
+    @Override
+    public Object visitProvidersOption(AngularParser.ProvidersOptionContext ctx) {
+        return super.visitProvidersOption(ctx);
+    }
+
+    @Override
+    public Object visitProviderList(AngularParser.ProviderListContext ctx) {
+        return super.visitProviderList(ctx);
+    }
+
+    @Override
+    public Object visitProvideStoreExpression(AngularParser.ProvideStoreExpressionContext ctx) {
+        return super.visitProvideStoreExpression(ctx);
+    }
+
+    @Override
+    public Object visitSimpleProvider(AngularParser.SimpleProviderContext ctx) {
+        return super.visitSimpleProvider(ctx);
+    }
 
     @Override
     public Object visitCssOption(AngularParser.CssOptionContext ctx) {
-        Css css = new Css((String) ctx.css().getText());
-        return css;
-    }
-
-//    <<<<<<<<<<<<<<<<<< Html
-
-    @Override
-    public Object visitHtmlOption(AngularParser.HtmlOptionContext ctx) {
-        return visit(ctx.html());
-    }
-
-
-    @Override
-    public Object visitHtml(AngularParser.HtmlContext ctx) {
-        List<DivNode> divs = new ArrayList<>();
-        for (AngularParser.DivContext divCtx : ctx.div()) {
-            DivNode divNode = (DivNode) visit(divCtx);
-            divs.add(divNode);
-        }
-        return new Html(divs);
-    }
-
-
-
-    @Override
-    public Object visitDivNode(AngularParser.DivNodeContext ctx) {
-        String tagName = ctx.ID(0).getText();
-        List<DivAttribute> attributes = new ArrayList<>();
-
-        if (!tagName.isEmpty() && Character.isUpperCase(tagName.charAt(0))) {
-            Component currentComponent = componentTable.getComponentByClass(currentComponentName);
-
-            boolean isImported = currentComponent != null &&
-                    (currentComponent.importsComponent(tagName) || componentTable.isImportedViaStatement(tagName));
-
-            if (!isImported) {
-                errors.add("Semantic Error at line " + ctx.ID(0).getSymbol().getLine() +
-                        ": Component '" + tagName + "' is not defined or imported.");
-            }
-        }
-
-        for (AngularParser.DivAttributeContext attrCtx : ctx.divAttribute()) {
-            DivAttribute attr = (DivAttribute) visit(attrCtx);
-            attributes.add(attr);
-        }
-
-        List<DivChild> children = new ArrayList<>();
-        for (AngularParser.DivChildContext childCtx : ctx.divChild()) {
-            DivChild child = (DivChild) visit(childCtx);
-            children.add(child);
-        }
-
-        return new DivNode(tagName, attributes, children);
-    }
-
-//
-//    @Override
-////    public Object visitClassOrId(AngularParser.ClassOrIdContext ctx) {
-////        return new ClassOrId(ctx.ATTRIBUTE().getText());
-////    }
-//
-//    @Override
-//    public Object visitNgDirective(AngularParser.NgDirectiveContext ctx) {
-//        return new NgDirective(ctx.getText());
-//    }
-
-    @Override
-    public Object visitEventBinding(AngularParser.EventBindingContext ctx) {
-        return new EventBinding(ctx.getText());
-    }
-
-
-    @Override
-    public Object visitBrTag(AngularParser.BrTagContext ctx) {
-        AngularParser.BrContext brCtx = ctx.br();
-
-        String tagName = brCtx.getToken(AngularParser.ID, 0).getText();
-        String binding = brCtx.getToken(AngularParser.ANGULAR_BINDING, 0).getText();
-        scopeStack.push(tagName);
-        String currentScope = String.join(" > ", scopeStack);
-
-        String attributes = brCtx.getText();
-
-        htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
-        scopeStack.pop();
-        checkBindingForUndefinedVariable(binding, ctx.getStart().getLine());
-        return new BrTag(tagName, binding);
-    }
-
-
-    @Override
-    public Object visitImageElement(AngularParser.ImageElementContext ctx) {
-        AngularParser.ImageContext iCtx = ctx.image();
-
-        String tagName = iCtx.ID().getText();
-        String property = iCtx.ANGULAR_ATTRIBUTE_PROPERTY().getText();
-        scopeStack.push(tagName);
-        String currentScope = String.join(" > ", scopeStack);
-
-        String attributes = iCtx.getText();
-
-        htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
-         scopeStack.pop();
-        Pattern pattern = Pattern.compile("\\[.*?\\]\\s*=\\s*\"(.*?)\"");
-        Matcher matcher = pattern.matcher(property);
-        if (matcher.find()) {
-            String expression = matcher.group(1).trim();
-            String[] parts = expression.split("\\.");
-            String variableName = parts[0].trim();
-
-            if (symbolTable.findSymbol(variableName, scope) == null) {
-                int line = ctx.getStart().getLine();
-                String error = "Semantic Error at line " + line + ": Variable '" + variableName + "' is not defined in [src] binding.";
-                errors.add(error);
-            }
-        }
-        return new ImageElement(
-                tagName,
-                property
-        );
-    }
-
-
-    @Override
-    public Object visitNestedDiv(AngularParser.NestedDivContext ctx) {
-        DivNode nested = (DivNode) visit(ctx.div());
-        return new NestedDiv(nested);
+        return super.visitCssOption(ctx);
     }
 
     @Override
-    public Object visitParagraphWrapper(AngularParser.ParagraphWrapperContext ctx) {
-        html.Paragraph.ParagraphElement paragraph = (html.Paragraph.ParagraphElement) visit(ctx.paragraph());
-        return new html.DivChild.ParagraphWrapper(paragraph);
+    public Object visitInlineTemplate(AngularParser.InlineTemplateContext ctx) {
+        return super.visitInlineTemplate(ctx);
     }
 
     @Override
-    public Object visitH_Element(AngularParser.H_ElementContext ctx) {
-        AngularParser.HElementContext hCtx = ctx.hElement();
-
-        String tagName = hCtx.ID(0).getText();
-        String binding=hCtx.ANGULAR_BINDING().getText();
-        scopeStack.push(tagName);
-        String currentScope = String.join(" > ", scopeStack);
-
-        String attributes = hCtx.getText();
-        htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
-        scopeStack.pop();
-        checkBindingForUndefinedVariable(binding, ctx.getStart().getLine());
-        return new H_Element(
-                tagName,
-                binding,
-                hCtx.ID(1).getText()
-        );
+    public Object visitExternalTemplate(AngularParser.ExternalTemplateContext ctx) {
+        return super.visitExternalTemplate(ctx);
     }
-
-
-
 
     @Override
-    public Object visitP_Element(AngularParser.P_ElementContext ctx) {
-        AngularParser.PElementContext pCtx = ctx.pElement();
-
-        String tagName = "p";
-        String binding=pCtx.ANGULAR_BINDING().getText();
-        scopeStack.push(tagName);
-        String currentScope = String.join(" > ", scopeStack);
-
-        String attributes = pCtx.getText();
-        htmlSymbolTable.addSymbol(tagName, attributes, currentScope);
-        scopeStack.pop();
-        checkBindingForUndefinedVariable(binding, ctx.getStart().getLine());
-        return new P_Element(binding);
+    public Object visitImportStatement(AngularParser.ImportStatementContext ctx) {
+        return super.visitImportStatement(ctx);
     }
 
-    private void checkBindingForUndefinedVariable(String binding, int line) {
-        String expression = binding.replaceAll("\\{\\{", "").replaceAll("}}", "").trim();
-
-        String[] parts = expression.split("\\.");
-        String variableName = parts[0].trim();
-
-        if (symbolTable.findSymbol(variableName, scope) == null) {
-            String error = "Semantic Error at line " + line + ": Variable '" + variableName + "' is not defined.";
-            errors.add(error);
-        }
+    @Override
+    public Object visitImportClause(AngularParser.ImportClauseContext ctx) {
+        return super.visitImportClause(ctx);
     }
 
-    //>>>>>>>>>>>>>>>>>>>>>>
-//    <<<<<<<<<<<<<<<<<<<< Typescript
+    @Override
+    public Object visitDefaultImport(AngularParser.DefaultImportContext ctx) {
+        return super.visitDefaultImport(ctx);
+    }
+
+    @Override
+    public Object visitNamespaceImport(AngularParser.NamespaceImportContext ctx) {
+        return super.visitNamespaceImport(ctx);
+    }
+
+    @Override
+    public Object visitNamedImports(AngularParser.NamedImportsContext ctx) {
+        return super.visitNamedImports(ctx);
+    }
+
+    @Override
+    public Object visitImportSpecList(AngularParser.ImportSpecListContext ctx) {
+        return super.visitImportSpecList(ctx);
+    }
+
+    @Override
+    public Object visitImportSpecifier(AngularParser.ImportSpecifierContext ctx) {
+        return super.visitImportSpecifier(ctx);
+    }
+
+    @Override
+    public Object visitComponentList(AngularParser.ComponentListContext ctx) {
+        return super.visitComponentList(ctx);
+    }
 
     @Override
     public Object visitTs(AngularParser.TsContext ctx) {
-        TypeScript typeScript = new TypeScript();
+        return super.visitTs(ctx);
+    }
 
-        for (int i = 0; i < ctx.tsAttribute().size(); i++) {
-            Attribute attribute = (Attribute) visit(ctx.tsAttribute(i));
-            typeScript.addAttribute(attribute);
-        }
-
-        if (ctx.constructor() != null) {
-            Constructor constructor = (Constructor) visit(ctx.constructor());
-            typeScript.setConstructor(constructor);
-        }
-        for (int i = 0; i < ctx.method().size(); i++) {
-            Method method = (Method) visit(ctx.method(i));
-            typeScript.addMethod(method);
-        }
-
-        return typeScript;
-
+    @Override
+    public Object visitTsStatement(AngularParser.TsStatementContext ctx) {
+        return super.visitTsStatement(ctx);
     }
 
     @Override
     public Object visitDeclareAttribute(AngularParser.DeclareAttributeContext ctx) {
-        String name = ctx.ID().getText();
-        Kind kind;
-        if (ctx.type().NUMBER() != null) {
-            kind = Kind.number;
-        } else if (ctx.type().BOOLEAN() != null) {
-            kind = Kind.bool;
-        } else if (ctx.type().STRINGDL() != null) {
-            kind = Kind.string;
-        } else {
-            kind = Kind.any;
-        }
-        Symbol symbol = symbolTable.findSymbol(name, scope);
-        if (symbol == null) symbolTable.addSymbol(name, kind, scope);
-        else {
-            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " already exists ");
-        }
-        return new Attribute(name, kind);
+        return super.visitDeclareAttribute(ctx);
     }
 
     @Override
     public Object visitDeclareAndAssignAttribute(AngularParser.DeclareAndAssignAttributeContext ctx) {
-        String name = ctx.ID().getText();
-        Kind kind;
-        Type type;
-        if (ctx.type().NUMBER() != null) {
-            kind = Kind.number;
-            type = (Number) visit(ctx.literal());
-        } else if (ctx.type().BOOLEAN() != null) {
-            kind = Kind.bool;
-            type = (Bool) visit(ctx.literal());
-        } else if (ctx.type().STRINGDL() != null) {
-            kind = Kind.string;
-            type = (Text) visit(ctx.literal());
-        } else {
-            kind = Kind.any;
-            type = (Type) visit(ctx.literal());
-        }
+        return super.visitDeclareAndAssignAttribute(ctx);
+    }
 
-        Symbol symbol = symbolTable.findSymbol(name, scope);
-        if (symbol == null) symbolTable.addSymbol(name, kind, type, scope);
-        else {
-            // error attribute already declared
-            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " already exists ");
-        }
+    @Override
+    public Object visitStateDecl(AngularParser.StateDeclContext ctx) {
+        return super.visitStateDecl(ctx);
+    }
 
-        return new Attribute(name, kind);
+    @Override
+    public Object visitStateProperty(AngularParser.StatePropertyContext ctx) {
+        return super.visitStateProperty(ctx);
+    }
+
+    @Override
+    public Object visitStateValue(AngularParser.StateValueContext ctx) {
+        return super.visitStateValue(ctx);
+    }
+
+    @Override
+    public Object visitArrayValue(AngularParser.ArrayValueContext ctx) {
+        return super.visitArrayValue(ctx);
+    }
+
+    @Override
+    public Object visitObjectValue(AngularParser.ObjectValueContext ctx) {
+        return super.visitObjectValue(ctx);
     }
 
     @Override
     public Object visitConstructor(AngularParser.ConstructorContext ctx) {
-        scope += ".constructor";
-        Constructor constructor = new Constructor();
+        return super.visitConstructor(ctx);
+    }
 
-        for (int i = 0; i < ctx.expression().size(); i++) {
-            Expression expression = (Expression) visit(ctx.expression(i));
-            constructor.addExpression(expression);
-        }
-        scope = scope.substring(0, scope.length() - ".constructor".length());
+    @Override
+    public Object visitConstructorParams(AngularParser.ConstructorParamsContext ctx) {
+        return super.visitConstructorParams(ctx);
+    }
 
-        return constructor;
+    @Override
+    public Object visitConstructorParam(AngularParser.ConstructorParamContext ctx) {
+        return super.visitConstructorParam(ctx);
+    }
+
+    @Override
+    public Object visitMethod(AngularParser.MethodContext ctx) {
+        return super.visitMethod(ctx);
+    }
+
+    @Override
+    public Object visitMethodParams(AngularParser.MethodParamsContext ctx) {
+        return super.visitMethodParams(ctx);
+    }
+
+    @Override
+    public Object visitMethodParam(AngularParser.MethodParamContext ctx) {
+        return super.visitMethodParam(ctx);
+    }
+
+    @Override
+    public Object visitParamType(AngularParser.ParamTypeContext ctx) {
+        return super.visitParamType(ctx);
+    }
+
+    @Override
+    public Object visitTsType(AngularParser.TsTypeContext ctx) {
+        return super.visitTsType(ctx);
+    }
+
+    @Override
+    public Object visitGenericOrBasicType(AngularParser.GenericOrBasicTypeContext ctx) {
+        return super.visitGenericOrBasicType(ctx);
+    }
+
+    @Override
+    public Object visitGenericType(AngularParser.GenericTypeContext ctx) {
+        return super.visitGenericType(ctx);
+    }
+
+    @Override
+    public Object visitGenericTypeParam(AngularParser.GenericTypeParamContext ctx) {
+        return super.visitGenericTypeParam(ctx);
+    }
+
+    @Override
+    public Object visitArrayType(AngularParser.ArrayTypeContext ctx) {
+        return super.visitArrayType(ctx);
+    }
+
+    @Override
+    public Object visitType(AngularParser.TypeContext ctx) {
+        return super.visitType(ctx);
     }
 
     @Override
     public Object visitDeclareVariable(AngularParser.DeclareVariableContext ctx) {
-        String name = ctx.ID().getText();
-        Kind kind;
-        if (ctx.type().NUMBER() != null) {
-            kind = Kind.number;
-        } else if (ctx.type().BOOLEAN() != null) {
-            kind = Kind.bool;
-        } else if (ctx.type().STRINGDL() != null) {
-            kind = Kind.string;
-        } else kind = Kind.any;
-
-        Symbol symbol = symbolTable.findSymbol(name, scope);
-        if (symbol == null)
-            symbolTable.addSymbol(name, kind, scope);
-        else {
-            // error variable already declared in this scope
-            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " already exists,");
-        }
-
-
-        return new Variable(name, kind);
+        return super.visitDeclareVariable(ctx);
     }
 
     @Override
     public Object visitDeclareAndAssign(AngularParser.DeclareAndAssignContext ctx) {
-        String name = ctx.ID().getText();
-        Kind kind;
-        Type type;
-        if (ctx.type().NUMBER() != null) {
-            kind = Kind.number;
-            try {
-                type = (Number) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
-            }
-        } else if (ctx.type().BOOLEAN() != null) {
-            kind = Kind.bool;
-            try {
-                type = (Bool) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
-            }
-        } else if (ctx.type().STRINGDL() != null) {
-            kind = Kind.string;
-            try {
-                type = (Text) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
-            }
-        } else {
-            kind = Kind.any;
-            type = (Type) visit(ctx.literal());
-        }
-
-        Symbol symbol = symbolTable.findSymbol(name, scope);
-        if (symbol == null)
-            symbolTable.addSymbol(name, kind, type, scope);
-        else {
-            // error variable already declared in this scope
-            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " already exists");
-        }
-        return new Variable(name, kind);
+        return super.visitDeclareAndAssign(ctx);
     }
 
     @Override
-    public Object visitAssignVariable(AngularParser.AssignVariableContext ctx) {
-        String name = ctx.ID().getText();
-        Symbol symbol = symbolTable.findSymbol(name, scope);
-        if (symbol == null) {
-            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " not declared already");
-        }
-        Kind kind = symbol.getKind();
-        Type type;
-        if (kind == Kind.number) {
-            try {
-                type = (Number) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
-            }
-        } else if (kind == Kind.bool) {
-            try {
-                type = (Bool) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
-            }
-        } else if (kind == Kind.string) {
-            try {
-                type = (Text) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
-            }
-        } else
-            type = (Type) visit(ctx.literal());
-
-        symbol.setType(type);
-
-        return new Variable(name, kind);
-    }
-
-    @Override
-    public Object visitAssignAttribute(AngularParser.AssignAttributeContext ctx) {
-        String name = ctx.ID().getText();
-
-        Symbol symbol = symbolTable.findSymbol(name, scope);
-        if (symbol == null) {
-            errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Symbol " + name + " not declared already");
-        }
-        Kind kind = symbol.getKind();
-        Type type;
-        if (kind == Kind.number) {
-            try {
-                type = (Number) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line " + ctx.ID().getSymbol().getLine() + ": Expected number, found something else");
-            }
-        } else if (kind == Kind.bool) {
-            try {
-                type = (Bool) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected boolean, found something else");
-            }
-        } else if (kind == Kind.string) {
-            try {
-                type = (Text) visit(ctx.literal());
-            } catch (ClassCastException e) {
-                type = null;
-                errors.add("Error at line" + ctx.ID().getSymbol().getLine() + ": Expected string, found something else");
-            }
-        } else
-            type = (Type) visit(ctx.literal());
-
-        symbol.setType(type);
-
-        return null;
-    }
-
-    @Override
-    public Object visitStoredID(AngularParser.StoredIDContext ctx) {
-        String name = ctx.ID().getText();
-        Symbol symbol = symbolTable.findSymbol(name, scope);
-        return symbol.getType();
-    }
-
-    @Override
-    public Object visitString(AngularParser.StringContext ctx) {
-        return new Text(ctx.getText());
-    }
-
-    @Override
-    public Object visitNumber(AngularParser.NumberContext ctx) {
-        return new Number(Integer.parseInt(ctx.getText()));
-    }
-
-    @Override
-    public Object visitBoolean(AngularParser.BooleanContext ctx) {
-        Bool bool;
-        if (ctx.TRUE() != null) {
-            bool = new Bool(true);
-        } else {
-            bool = new Bool(false);
-        }
-        return bool;
+    public Object visitAssign(AngularParser.AssignContext ctx) {
+        return super.visitAssign(ctx);
     }
 
     @Override
@@ -538,49 +282,253 @@ public class AngularVisitor extends AngularParserBaseVisitor {
         return super.visitFor(ctx);
     }
 
+    @Override
+    public Object visitReturnStatement(AngularParser.ReturnStatementContext ctx) {
+        return super.visitReturnStatement(ctx);
+    }
+
+    @Override
+    public Object visitExprStatement(AngularParser.ExprStatementContext ctx) {
+        return super.visitExprStatement(ctx);
+    }
+
+    @Override
+    public Object visitTernaryExpr(AngularParser.TernaryExprContext ctx) {
+        return super.visitTernaryExpr(ctx);
+    }
+
+    @Override
+    public Object visitOrExpr(AngularParser.OrExprContext ctx) {
+        return super.visitOrExpr(ctx);
+    }
+
+    @Override
+    public Object visitToAnd(AngularParser.ToAndContext ctx) {
+        return super.visitToAnd(ctx);
+    }
+
+    @Override
+    public Object visitLeftHandSide(AngularParser.LeftHandSideContext ctx) {
+        return super.visitLeftHandSide(ctx);
+    }
+
+    @Override
+    public Object visitToEq(AngularParser.ToEqContext ctx) {
+        return super.visitToEq(ctx);
+    }
+
+    @Override
+    public Object visitAndExpr(AngularParser.AndExprContext ctx) {
+        return super.visitAndExpr(ctx);
+    }
+
+    @Override
+    public Object visitToRel(AngularParser.ToRelContext ctx) {
+        return super.visitToRel(ctx);
+    }
+
+    @Override
+    public Object visitEqNeq(AngularParser.EqNeqContext ctx) {
+        return super.visitEqNeq(ctx);
+    }
+
+    @Override
+    public Object visitToAdd(AngularParser.ToAddContext ctx) {
+        return super.visitToAdd(ctx);
+    }
+
+    @Override
+    public Object visitRelational(AngularParser.RelationalContext ctx) {
+        return super.visitRelational(ctx);
+    }
+
+    @Override
+    public Object visitAddSub(AngularParser.AddSubContext ctx) {
+        return super.visitAddSub(ctx);
+    }
+
+    @Override
+    public Object visitToMul(AngularParser.ToMulContext ctx) {
+        return super.visitToMul(ctx);
+    }
+
+    @Override
+    public Object visitToUnary(AngularParser.ToUnaryContext ctx) {
+        return super.visitToUnary(ctx);
+    }
+
+    @Override
+    public Object visitMulDiv(AngularParser.MulDivContext ctx) {
+        return super.visitMulDiv(ctx);
+    }
+
+    @Override
+    public Object visitUnaryOp(AngularParser.UnaryOpContext ctx) {
+        return super.visitUnaryOp(ctx);
+    }
+
+    @Override
+    public Object visitToPrimary(AngularParser.ToPrimaryContext ctx) {
+        return super.visitToPrimary(ctx);
+    }
+
+    @Override
+    public Object visitTsPrimary(AngularParser.TsPrimaryContext ctx) {
+        return super.visitTsPrimary(ctx);
+    }
+
+    @Override
+    public Object visitThisRef(AngularParser.ThisRefContext ctx) {
+        return super.visitThisRef(ctx);
+    }
+
+    @Override
+    public Object visitStoredID(AngularParser.StoredIDContext ctx) {
+        return super.visitStoredID(ctx);
+    }
+
+    @Override
+    public Object visitString(AngularParser.StringContext ctx) {
+        return super.visitString(ctx);
+    }
+
+    @Override
+    public Object visitNumber(AngularParser.NumberContext ctx) {
+        return super.visitNumber(ctx);
+    }
+
+    @Override
+    public Object visitBooleanTrue(AngularParser.BooleanTrueContext ctx) {
+        return super.visitBooleanTrue(ctx);
+    }
+
+    @Override
+    public Object visitBooleanFalse(AngularParser.BooleanFalseContext ctx) {
+        return super.visitBooleanFalse(ctx);
+    }
 
     @Override
     public Object visitKeyValue(AngularParser.KeyValueContext ctx) {
-        KeyValuePair keyValuePair = new KeyValuePair();
-
-        for (int i = 0; i < ctx.ID().size(); i++) {
-            keyValuePair.addToKeyValue(ctx.ID(i).getText(), ctx.STRING(i).getText());
-        }
-        return keyValuePair;
+        return super.visitKeyValue(ctx);
     }
 
     @Override
     public Object visitArray(AngularParser.ArrayContext ctx) {
-        Array array = new Array();
-        for (int i = 0; i <ctx.literal().size(); i++) {
-            array.add((Type) visit(ctx.literal(i)));
-        }
-        return array;
+        return super.visitArray(ctx);
     }
 
     @Override
-    public Object visitMethod(AngularParser.MethodContext ctx) {
-        String last = "." + ctx.ID().getText() + ctx.ID().getSymbol().getLine();
-        scope += last;
-        String name = ctx.ID().getText();
-
-        Method method = new Method(name);
-
-        for (int i = 0; i < ctx.expression().size(); i++) {
-            Expression expression = (Expression) visit(ctx.expression(i));
-            method.addExpression(expression);
-        }
-
-        scope = scope.substring(0, scope.length() - last.length());
-
-        return method;
-
+    public Object visitParen(AngularParser.ParenContext ctx) {
+        return super.visitParen(ctx);
     }
 
     @Override
-    public Object visitMethodParams(AngularParser.MethodParamsContext ctx) {
-        return super.visitMethodParams(ctx);
+    public Object visitArrowFn(AngularParser.ArrowFnContext ctx) {
+        return super.visitArrowFn(ctx);
     }
 
+    @Override
+    public Object visitNull(AngularParser.NullContext ctx) {
+        return super.visitNull(ctx);
+    }
 
+    @Override
+    public Object visitNewExpression(AngularParser.NewExpressionContext ctx) {
+        return super.visitNewExpression(ctx);
+    }
+
+    @Override
+    public Object visitDotCall(AngularParser.DotCallContext ctx) {
+        return super.visitDotCall(ctx);
+    }
+
+    @Override
+    public Object visitDotAccess(AngularParser.DotAccessContext ctx) {
+        return super.visitDotAccess(ctx);
+    }
+
+    @Override
+    public Object visitBracketAccess(AngularParser.BracketAccessContext ctx) {
+        return super.visitBracketAccess(ctx);
+    }
+
+    @Override
+    public Object visitCall(AngularParser.CallContext ctx) {
+        return super.visitCall(ctx);
+    }
+
+    @Override
+    public Object visitGenericTypeArguments(AngularParser.GenericTypeArgumentsContext ctx) {
+        return super.visitGenericTypeArguments(ctx);
+    }
+
+    @Override
+    public Object visitSpreadOrExpr(AngularParser.SpreadOrExprContext ctx) {
+        return super.visitSpreadOrExpr(ctx);
+    }
+
+    @Override
+    public Object visitArrowFunction(AngularParser.ArrowFunctionContext ctx) {
+        return super.visitArrowFunction(ctx);
+    }
+
+    @Override
+    public Object visitKeyValuePair(AngularParser.KeyValuePairContext ctx) {
+        return super.visitKeyValuePair(ctx);
+    }
+
+    @Override
+    public Object visitPrimitiveDataType(AngularParser.PrimitiveDataTypeContext ctx) {
+        return super.visitPrimitiveDataType(ctx);
+    }
+
+    @Override
+    public Object visitHtml(AngularParser.HtmlContext ctx) {
+        return super.visitHtml(ctx);
+    }
+
+    @Override
+    public Object visitNode(AngularParser.NodeContext ctx) {
+        return super.visitNode(ctx);
+    }
+
+    @Override
+    public Object visitInterpolation(AngularParser.InterpolationContext ctx) {
+        return super.visitInterpolation(ctx);
+    }
+
+    @Override
+    public Object visitTextNode(AngularParser.TextNodeContext ctx) {
+        return super.visitTextNode(ctx);
+    }
+
+    @Override
+    public Object visitElement(AngularParser.ElementContext ctx) {
+        return super.visitElement(ctx);
+    }
+
+    @Override
+    public Object visitHtmlAttribute(AngularParser.HtmlAttributeContext ctx) {
+        return super.visitHtmlAttribute(ctx);
+    }
+
+    @Override
+    public Object visitNgForDirective(AngularParser.NgForDirectiveContext ctx) {
+        return super.visitNgForDirective(ctx);
+    }
+
+    @Override
+    public Object visitNgIfDirective(AngularParser.NgIfDirectiveContext ctx) {
+        return super.visitNgIfDirective(ctx);
+    }
+
+    @Override
+    public Object visitCss(AngularParser.CssContext ctx) {
+        return super.visitCss(ctx);
+    }
+
+    @Override
+    public Object visitCssDeclaration(AngularParser.CssDeclarationContext ctx) {
+        return super.visitCssDeclaration(ctx);
+    }
 }

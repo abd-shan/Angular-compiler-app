@@ -1,12 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Store, createAction, createReducer, on, createSelector, createFeatureSelector } from '@ngrx/store';
+import { withLatestFrom, map } from 'rxjs/operators';
+
+// تعريف حالة التطبيق
+
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ CommonModule, FormsModule, RouterModule ],
+  imports: [CommonModule, FormsModule, RouterModule],
   styles: [
     `
       .container {
@@ -24,7 +29,6 @@ import { RouterModule } from '@angular/router';
       }
 
       .main-content {
-
         padding: 20px;
       }
 
@@ -32,7 +36,6 @@ import { RouterModule } from '@angular/router';
         background-color: white;
         padding: 20px;
         border-radius: 8px;
-
         margin-bottom: 20px;
       }
 
@@ -40,7 +43,6 @@ import { RouterModule } from '@angular/router';
         width: 100%;
         padding: 8px;
         margin: 8px;
-
         border-radius: 4px;
         box-sizing: border-box;
       }
@@ -57,7 +59,6 @@ import { RouterModule } from '@angular/router';
 
       .product-list {
         display: grid;
-
         gap: 20px;
       }
 
@@ -66,7 +67,6 @@ import { RouterModule } from '@angular/router';
         border: 1px solid #ddd;
         border-radius: 8px;
         padding: 15px;
-
       }
 
       .product-card img {
@@ -116,7 +116,6 @@ import { RouterModule } from '@angular/router';
         cursor: pointer;
         border: none;
         background: none;
-
       }
 
       .tab.active {
@@ -130,7 +129,6 @@ import { RouterModule } from '@angular/router';
         left: 0;
         width: 100%;
         height: 100%;
-
         display: flex;
         justify-content: center;
         align-items: center;
@@ -143,7 +141,6 @@ import { RouterModule } from '@angular/router';
         border-radius: 8px;
         max-width: 500px;
         width: 90%;
-
       }
 
       .modal-content img {
@@ -169,28 +166,28 @@ import { RouterModule } from '@angular/router';
         </form>
 
         <div class="tabs">
-          <button class="tab" [class.active]="currentRoute === '/products'" (click)="navigate('/products')">Products</button>
-          <button class="tab" [class.active]="currentRoute === '/add'" (click)="navigate('/add')">Add</button>
+          <button class="tab" [class.active]="(currentRoute$ | async) === '/products'" (click)="navigate('/products')">Products</button>
+          <button class="tab" [class.active]="(currentRoute$ | async) === '/add'" (click)="navigate('/add')">Add</button>
         </div>
       </div>
 
       <div class="main-content">
-        <div *ngIf="currentRoute === '/products'">
+        <div *ngIf="(currentRoute$ | async) === '/products'">
           <h2>Product List</h2>
           <div class="product-list">
-            <div class="product-card" *ngFor="let product of products">
+            <div class="product-card" *ngFor="let product of products$ | async">
               <img [src]="product.image" [alt]="product.name">
               <h3>{{ product.name }}</h3>
               <p>{{ product.description }}</p>
               <p><strong>Price: {{ product.price }} SAR</strong></p>
               <button class="edit" (click)="showDetails(product.id)">View Details</button>
-              <button class="edit" (click)="editProduct(product.id)">Edit</button>
+              <button class="edit" (click)="editProduct(product)">Edit</button>
               <button class="delete" (click)="deleteProduct(product.id)">Delete</button>
             </div>
           </div>
         </div>
 
-        <div *ngIf="currentRoute === '/add'">
+        <div *ngIf="(currentRoute$ | async) === '/add'">
           <h2>Add New Product</h2>
           <form class="product-form">
             <input type="text" placeholder="Product Name" [(ngModel)]="newProduct.name" name="name" required>
@@ -201,7 +198,7 @@ import { RouterModule } from '@angular/router';
           </form>
         </div>
 
-        <div *ngIf="selectedProduct" class="modal">
+        <div *ngIf="(selectedProduct$ | async) as selectedProduct" class="modal">
           <div class="modal-content">
             <h2>{{ selectedProduct.name }}</h2>
             <img [src]="selectedProduct.image" [alt]="selectedProduct.name">
@@ -213,12 +210,19 @@ import { RouterModule } from '@angular/router';
       </div>
     </div>
   `,
+  providers: [
+     provideStore({ app: appReducer })
+  ]
 })
 
+
 export class App {
-  products: any  = [];
-  selectedProduct: any = null;
-  currentRoute: string = '/products';
+  private store = inject(Store<{ app: AppState }>);
+
+  products$ = this.store.select(state => state.app.products);
+  selectedProduct$ = this.store.select(state => state.app.selectedProduct);
+  currentRoute$ = this.store.select(state => state.app.currentRoute);
+
   newProduct: any = {
     name: '',
     description: '',
@@ -226,69 +230,41 @@ export class App {
     price: 0
   };
 
-  constructor() {
-    // Initialize with sample products
-    this.products = [
-      {
-        id: 1,
-        name: 'HP Laptop',
-        description: 'Brand new HP Laptop with Intel i7 processor',
-        image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
-        price: 3500
-      },
-      {
-        id: 2,
-        name: 'iPhone',
-        description: 'iPhone 14 Pro with advanced camera system',
-        image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
-        price: 4500
-      },
-      {
-        id: 3,
-        name: 'AirPods',
-        description: 'Wireless Apple AirPods',
-        image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
-        price: 800
-      }
-    ];
-  }
-
-  // Navigation Methods
-  navigate(route: string) {
-    this.currentRoute = route;
-  }
-
   // Product Management Methods
   addProduct() {
     if (this.newProduct.name && this.newProduct.description && this.newProduct.image && this.newProduct.price) {
-      const newProduct = {
-        ...this.newProduct,
-        id: this.products.length > 0 ? Math.max(...this.products.map(p => p.id)) + 1 : 1
-      };
-      this.products.push( newProduct);
+      this.store.dispatch(addProduct({
+        product: {
+          name: this.newProduct.name,
+          description: this.newProduct.description,
+          image: this.newProduct.image,
+          price: this.newProduct.price
+        }
+      }));
       this.resetNewProduct();
-      this.currentRoute = '/products';
     }
   }
 
   deleteProduct(productId: number) {
-    this.products = this.products.filter(p => p.id !== productId);
+    this.store.dispatch(deleteProduct({ id: productId }));
   }
 
-  editProduct(productId: number) {
-    const product = this.products.find(p => p.id === productId);
-    if ( product ) {
-      this.newProduct = { ...product };
-      this.navigate('/add');
-    }
+  editProduct(product: Product) {
+    this.newProduct = { ...product };
+    this.navigate('/add');
   }
 
   showDetails(productId: number) {
-    this.selectedProduct = this.products.find(p => p.id === productId);
+    this.store.dispatch(showDetails({ id: productId }));
   }
 
   closeModal() {
-    this.selectedProduct = null;
+    this.store.dispatch(closeModal());
+  }
+
+  // Navigation Methods
+  navigate(route: string) {
+    this.store.dispatch(navigate({ route }));
   }
 
   onSubmit(event: Event) {
@@ -304,116 +280,120 @@ export class App {
       price: 0
     };
   }
-}
 
-
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-
-@Component({
-  selector: 'app-root',
-  imports: [ RouterOutlet ],
-  styleUrl: './app.css',
-  templateUrl: './app.html',
-})
-export class App {
-  protected readonly title = signal('app-angular');
-  private product:any;
-
-
-}
-
-
-
-@Component({
-  selector: "app-root",
-  standalone: true,
-  styles: [
-    `
-      .container {
-        display: flex;
-        margin: 0;
-        padding: 0;
-      }
-
-      #left {
-        width: 70%;
-        padding: 20px;
-        border-right: 2px solid #ccc;
-      }
-
-      #right {
-        width: 30%;
-        padding: 20px;
-        overflow-y: auto;
-      }
-
-      .product {
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin: 10px 0;
-        cursor: pointer;
-      }
-
-      .product img {
-        width: 50px;
-        height: 50px;
-        margin-right: 10px;
-      }
-
-      .detailsBox img {
-        width: 200px;
-        height: 200px;
-      }
-    `
-  ],
-  template: `
-    <div class="container">
-      <div id="left" class="detailsBox" *ngIf="selectedProduct">
-        <h2>{{ selectedProduct.name }}</h2>
-        <img [src]="selectedProduct.image">
-        <p>{{ selectedProduct.description }}</p>
-      </div>
-
-      <div id="right">
-        <div class="product" (click)="showDetails(product1)">
-          <img [src]="product1.image">
-          <br>{{ product1.name }}
-        </div>
-        <div class="product" (click)="showDetails(product2)">
-          <img [src]="product2.image">
-          <br>{{ product2.name }}
-        </div>
-        <div class="product" (click)="showDetails(product3)">
-          <img [src]="product3.image">
-          <br>{{ product3.name }}
-        </div>
-      </div>
-    </div>
-  `,
-})
-export class AppComponent {
-  product1 = {
-    name: "Product 1",
-    image: 'https://images.pexels.com/photos/4012470/pexels-photo-4012470.jpeg',
-    description: 'This is the description for product 1.'
-  };
-
-  product2 = {
-    name: 'Product 2',
-    image: 'https://images.pexels.com/photos/3764550/pexels-photo-3764550.jpeg',
-    description: 'This is the description for product 2.'
-  };
-
-  product3 = {
-    name: 'Product 3',
-    image: 'https://images.pexels.com/photos/3845492/pexels-photo-3845492.jpeg',
-    description: 'This is the description for product 3.'
-  };
-
-  selectedProduct: any = null;
-
-  showDetails(product: any) {
-    this.selectedProduct = product;
+  checkCondition() {
+    // تمثال للاستخدام الصحيح لـ if
+    const state = true;
+    if (state === true) {
+      // كود هنا
+    }
   }
+
+  runLoop() {
+    // تمثال للاستخدام الصحيح لـ for
+    for (let i = 0; i <= 0; i++) {
+      // كود هنا
+    }
+  }
+
+
+
+// القيم الابتدائية للحالة
+const initialState: AppState = {
+  products: [
+    {
+      id: 1,
+      name: 'HP Laptop',
+      description: 'Brand new HP Laptop with Intel i7 processor',
+      image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
+      price: 3500
+    },
+    {
+      id: 2,
+      name: 'iPhone',
+      description: 'iPhone 14 Pro with advanced camera system',
+      image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
+      price: 4500
+    },
+    {
+      id: 3,
+      name: 'AirPods',
+      description: 'Wireless Apple AirPods',
+      image: 'https://images.pexels.com/photos/7974/pexels-photo.jpg',
+      price: 800
+    }
+  ],
+  selectedProduct: null,
+  currentRoute: '/products'
+};
+
+// تعريف Actions
+export const addProduct = createAction(
+  '[Product] Add Product',
+  (product: Omit<Product, 'id'>) => ({ product })
+);
+
+export const deleteProduct = createAction(
+  '[Product] Delete Product',
+  (id: number) => ({ id })
+);
+
+export const editProduct = createAction(
+  '[Product] Edit Product',
+  (product: Product) => ({ product })
+);
+
+export const showDetails = createAction(
+  '[Product] Show Details',
+  (id: number) => ({ id })
+);
+
+export const closeModal = createAction(
+  '[Product] Close Modal'
+);
+
+export const navigate = createAction(
+  '[App] Navigate',
+  (route: string) => ({ route })
+);
+
+export const resetNewProduct = createAction(
+  '[Product] Reset New Product'
+);
+
+// إنشاء Reducer
+export const appReducer = createReducer(
+  initialState,
+  on(addProduct, (state, { product }) => {
+    const newId = state.products.length > 0 ? Math.max(...state.products.map(p => p.id)) + 1 : 1;
+    const newProduct = { ...product, id: newId };
+    return {
+      ...state,
+      products: [...state.products, newProduct],
+      currentRoute: '/products'
+    };
+  }),
+  on(deleteProduct, (state, { id }) => ({
+    ...state,
+    products: state.products.filter(p => p.id !== id)
+  })),
+  on(showDetails, (state, { id }) => ({
+    ...state,
+    selectedProduct: state.products.find(p => p.id === id) || null
+  })),
+  on(closeModal, (state) => ({
+    ...state,
+    selectedProduct: null
+  })),
+  on(navigate, (state, { route }) => ({
+    ...state,
+    currentRoute: route
+  }))
+);
+
+// إنشاء Selectors
+export const selectProducts = (state: AppState) => state.products;
+export const selectSelectedProduct = (state: AppState) => state.selectedProduct;
+export const selectCurrentRoute = (state: AppState) => state.currentRoute;
+
 }
