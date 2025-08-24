@@ -1,17 +1,18 @@
 package ts.types;
 
-public class ArrayType implements Type {
-    private Type elementType;
+public class ArrayType extends TsType {
+    private final TsType elementType;
 
-    public ArrayType(Type elementType) {
+    public ArrayType(TsType elementType) {
         this.elementType = elementType;
+    }
+
+    public TsType getElementType() {
+        return elementType;
     }
 
     @Override
     public String toString() {
-        return elementType.toString() + "[]";
+        return elementType + "[]";
     }
-
-    // Getters and setters
-    public Type getElementType() { return elementType; }
 }

@@ -1,36 +1,20 @@
 package ts.types;
 
-public class PrimitiveType implements Type {
-    public enum Primitive {
-        NUMBER("number"),
-        STRING("string"),
-        BOOLEAN("boolean"),
-        ANY("any"),
-        VOID("void");
+public class PrimitiveType extends TsType {
 
-        private final String name;
 
-        Primitive(String name) {
-            this.name = name;
-        }
+    private final Kind kind;
 
-        @Override
-        public String toString() {
-            return name;
-        }
+    public PrimitiveType(Kind kind) {
+        this.kind = kind;
     }
 
-    private Primitive type;
-
-    public PrimitiveType(Primitive type) {
-        this.type = type;
+    public Kind getKind() {
+        return kind;
     }
 
     @Override
     public String toString() {
-        return type.toString();
+        return kind.name().toLowerCase();
     }
-
-    // Getters and setters
-    public Primitive getType() { return type; }
 }

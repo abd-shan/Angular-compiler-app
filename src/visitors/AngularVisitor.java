@@ -5,7 +5,9 @@ import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
 import html.HtmlTemplate;
 import program.AngularApp;
-import program.AngularFile;
+import program.ComponentFile;
+import program.StateFile;
+import state.*;
 import ts.TypeScript;
 
 import java.util.ArrayList;
@@ -20,7 +22,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 
         for (AngularParser.AngularFileContext fileCtx : ctx.angularFile()) {
-            AngularFile file = visitAngularFile(fileCtx);
+            ComponentFile file = visitAngularFile(fileCtx);
             app.addProgram(file);
         }
 
@@ -28,18 +30,55 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     }
 
     @Override
-    public AngularFile visitAngularFile(AngularParser.AngularFileContext ctx) {
+    public ComponentFile visitAngularFile(AngularParser.AngularFileContext ctx) {
         if (ctx.componentFile() != null) {
-            return (AngularFile) visitComponentFile(ctx.componentFile());
+            return (ComponentFile) visitComponentFile(ctx.componentFile());
         }
+
+
         //  stateFile
         return null;
     }
 
     @Override
-    public Object visitStateFile(AngularParser.StateFileContext ctx) {
-        return super.visitStateFile(ctx);
+    public StateFile visitStateFile(AngularParser.StateFileContext ctx) {
+        StateFile stateFile = new StateFile();
+
+        // ==== import statements ====
+        for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
+            String importStmt = (String) visitImportStatement(impCtx); //   String
+            stateFile.addImport(importStmt);
+        }
+
+        // ====   interfaces, variables, actions, reducers, services ====
+        for (AngularParser.StateInterfaceContext ifaceCtx : ctx.stateInterface()) {
+            StateInterface iface = (StateInterface) visitStateInterface(ifaceCtx);
+            stateFile.addInterface(iface);
+        }
+
+        for (AngularParser.StateVariableContext varCtx : ctx.stateVariable()) {
+            StateVariable var = (StateVariable) visitStateVariable(varCtx);
+            stateFile.addVariable(var);
+        }
+
+        for (AngularParser.StateActionContext actionCtx : ctx.stateAction()) {
+            StateAction action = (StateAction) visitStateAction(actionCtx);
+            stateFile.addAction(action);
+        }
+
+        for (AngularParser.StateReducerContext reducerCtx : ctx.stateReducer()) {
+            StateReducer reducer = (StateReducer) visitStateReducer(reducerCtx);
+            stateFile.addReducer(reducer);
+        }
+
+        for (AngularParser.StateServiceClassContext svcCtx : ctx.stateServiceClass()) {
+            StateServiceClass service = (StateServiceClass) visitStateServiceClass(svcCtx);
+            stateFile.addServiceClass(service);
+        }
+
+        return stateFile;
     }
+
 
     @Override
     public Object visitStateServiceClass(AngularParser.StateServiceClassContext ctx) {
@@ -86,7 +125,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return super.visitReducerOnList(ctx);
     }
 
-    public AngularFile visitComponentFile(AngularParser.ComponentFileContext ctx) {
+    public ComponentFile visitComponentFile(AngularParser.ComponentFileContext ctx) {
         //  selector
         String selector = ctx.STRING().getText().replace("\"", "").replace("'", "");
 
@@ -103,7 +142,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         }
 
 
-        String className = ctx.ID(ctx.ID().size() - 1).getText();
+        String className = ctx.ID(0).getText();
 
 
         HtmlTemplate template = null;
@@ -112,7 +151,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
         TypeScript tsCode = new TypeScript(); // placeholder
 
-        return new AngularFile(className, selector, standalone, componentImports, template, styles, tsCode);
+        return new ComponentFile(className, selector, standalone, componentImports, template, styles, tsCode);
     }
 
     @Override

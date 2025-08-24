@@ -20,7 +20,7 @@ import java.util.Objects;
  */
 
 
-public class AngularFile {
+public class ComponentFile {
     private final String className;
     private final String selector;
     private final boolean standalone;
@@ -29,13 +29,13 @@ public class AngularFile {
     private final Stylesheet styles;             // null if don't exist
     private final TypeScript tsCode;
 
-    public AngularFile(String className,
-                       String selector,
-                       boolean standalone,
-                       List<String> componentImports,
-                       HtmlTemplate template,
-                       Stylesheet styles,
-                       TypeScript tsCode) {
+    public ComponentFile(String className,
+                         String selector,
+                         boolean standalone,
+                         List<String> componentImports,
+                         HtmlTemplate template,
+                         Stylesheet styles,
+                         TypeScript tsCode) {
 
         this.className = Objects.requireNonNull(className, "className is null");
         this.selector = Objects.requireNonNull(selector, "selector is null");
@@ -78,14 +78,14 @@ public class AngularFile {
 
     @Override
     public String toString() {
-        return "angularFile{" +
-                "className='" + className + '\'' +
-                ", selector='" + selector + '\'' +
-                ", standalone=" + standalone +
-                ", componentImports=" + componentImports +
-                ", template=" + template +
-                ", styles=" + styles +
-                ", tsCode=" + (tsCode != null ? "<ts>" : "null") +
+        return "angularFile{" + '\n'+
+                "className='" + className + '\'' + '\n'+
+                ", selector='" + selector + '\'' +'\n'+
+                ", standalone=" + standalone +'\n'+
+                ", componentImports=" + componentImports +'\n'+
+                ", template=" + template +'\n'+
+                ", styles=" + styles +'\n'+
+                ", tsCode=" + (tsCode != null ? "<ts>" : "null") +'\n'+
                 '}';
     }
 }
