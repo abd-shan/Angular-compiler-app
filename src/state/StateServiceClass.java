@@ -7,11 +7,13 @@ public class StateServiceClass {
     private final InjectableDecorator injectableDecorator; // maybe null
     private final String className;
     private final TypeScript tsCode; // AST  TypeScript
+    private final boolean isExported;
 
-    public StateServiceClass(InjectableDecorator injectableDecorator, String className, TypeScript tsCode) {
+    public StateServiceClass(InjectableDecorator injectableDecorator, String className, TypeScript tsCode, boolean isExported) {
         this.injectableDecorator = injectableDecorator;
         this.className = Objects.requireNonNull(className);
         this.tsCode = Objects.requireNonNull(tsCode);
+        this.isExported = isExported;
     }
 
     public InjectableDecorator getInjectableDecorator() {
@@ -31,6 +33,7 @@ public class StateServiceClass {
         return "\n StateServiceClass{" + "\n"+
                 "injectableDecorator=" + injectableDecorator +"\n"+
                 ", className='" + className + '\'' +"\n"+
+                ", isExported='" + isExported + '\'' +"\n"+
                 ", tsCode=<ts>" +"\n"+
                 '}';
     }

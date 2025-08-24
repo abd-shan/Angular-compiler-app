@@ -49,12 +49,14 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         StateFile stateFile = new StateFile();
 
         // ==== import statements ====
+
         for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
             String importStmt = (String) visitImportStatement(impCtx); //   String
             stateFile.addImport(importStmt);
         }
 
         // ====   interfaces, variables, actions, reducers, services ====
+
         for (AngularParser.StateInterfaceContext ifaceCtx : ctx.stateInterface()) {
             StateInterface iface = (StateInterface) visitStateInterface(ifaceCtx);
             stateFile.addInterface(iface);
