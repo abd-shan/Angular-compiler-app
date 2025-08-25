@@ -1,60 +1,40 @@
 package ts.expressions;
 
+import ts.statements.TsBlock;
 import  ts.statements.TsStatement;
+
+import java.util.ArrayList;
 import java.util.List;
 
-public class ArrowFunction implements TsExpression {
-    private List<String> parameters;
-    private TsExpression expressionBody;
-    private List<TsStatement> statementBody;
-    private boolean hasBraces;
+/**
+ * Represents an arrow function
+ */
+public class ArrowFunction implements TsAtom {
+    private final List<String> parameters;
+    private final TsExpression body;
+    private final TsBlock blockBody;
 
-    public ArrowFunction(List<String> parameters, TsExpression expressionBody) {
-        this.parameters = parameters;
-        this.expressionBody = expressionBody;
-        this.hasBraces = false;
-    }
-
-    public ArrowFunction(List<String> parameters, List<TsStatement> statementBody) {
-        this.parameters = parameters;
-        this.statementBody = statementBody;
-        this.hasBraces = true;
+    public ArrowFunction(List<String> parameters, TsExpression body, TsBlock blockBody) {
+        this.parameters = parameters != null ? new ArrayList<>(parameters) : new ArrayList<>();
+        this.body = body;
+        this.blockBody = blockBody;
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("(");
-
-        if (parameters != null && !parameters.isEmpty()) {
-            boolean first = true;
-            for (String param : parameters) {
-                if (!first) {
-                    sb.append(", ");
-                }
-                sb.append(param);
-                first = false;
-            }
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < parameters.size(); i++) {
+            if (i > 0) sb.append(", ");
+            sb.append(parameters.get(i));
         }
-
         sb.append(") => ");
 
-        if (hasBraces) {
-            sb.append("{\n");
-            for (TsStatement statement : statementBody) {
-                sb.append("  ").append(statement.toString()).append("\n");
-            }
-            sb.append("}");
-        } else {
-            sb.append(expressionBody.toString());
+        if (body != null) {
+            sb.append(body.toString());
+        } else if (blockBody != null) {
+            sb.append(blockBody.toString());
         }
 
         return sb.toString();
     }
-
-    // Getters and setters
-    public List<String> getParameters() { return parameters; }
-    public TsExpression getExpressionBody() { return expressionBody; }
-    public List<TsStatement> getStatementBody() { return statementBody; }
-    public boolean hasBraces() { return hasBraces; }
 }

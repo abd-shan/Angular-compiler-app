@@ -1,34 +1,28 @@
 package  ts.expressions;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-public class ObjectLiteral implements TsExpression {
-    private Map<String, TsExpression> properties;
 
-    public ObjectLiteral(Map<String, TsExpression> properties) {
-        this.properties = properties;
+/**
+ * Represents an object literal
+ */
+public class ObjectLiteral implements TsAtom {
+    private final List<KeyValuePair> properties;
+
+    public ObjectLiteral(List<KeyValuePair> properties) {
+        this.properties = properties != null ? new ArrayList<>(properties) : new ArrayList<>();
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{");
-
-        if (properties != null && !properties.isEmpty()) {
-            boolean first = true;
-            for (Map.Entry<String, TsExpression> entry : properties.entrySet()) {
-                if (!first) {
-                    sb.append(", ");
-                }
-                sb.append(entry.getKey()).append(": ").append(entry.getValue().toString());
-                first = false;
-            }
+        StringBuilder sb = new StringBuilder("{");
+        for (int i = 0; i < properties.size(); i++) {
+            if (i > 0) sb.append(", ");
+            sb.append(properties.get(i).toString());
         }
-
         sb.append("}");
         return sb.toString();
     }
-
-    // Getters and setters
-    public Map<String, TsExpression> getProperties() { return properties; }
 }

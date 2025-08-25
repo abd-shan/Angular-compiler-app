@@ -1,7 +1,7 @@
 package  ts.expressions;
 
 public class BinaryExpression implements TsExpression {
-    public enum Operator {
+    enum Operator {
         PLUS("+"),
         MINUS("-"),
         MULTIPLY("*"),
@@ -29,11 +29,12 @@ public class BinaryExpression implements TsExpression {
         }
     }
 
+
     private TsExpression left;
-    private Operator operator;
+    private String operator;
     private TsExpression right;
 
-    public BinaryExpression(TsExpression left, Operator operator, TsExpression right) {
+    public BinaryExpression(TsExpression left, String operator, TsExpression right) {
         this.left = left;
         this.operator = operator;
         this.right = right;
@@ -46,6 +47,9 @@ public class BinaryExpression implements TsExpression {
 
     // Getters and setters
     public TsExpression getLeft() { return left; }
-    public Operator getOperator() { return operator; }
+    public String getOperator() { return operator; }
     public TsExpression getRight() { return right; }
 }
+
+
+

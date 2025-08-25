@@ -1,9 +1,5 @@
 package symbolTable.ts;
 
-import ts.types.Type;
-
-import java.util.ArrayList;
-
 
 public class SymbolTable {
 

@@ -3,29 +3,38 @@ package ts.types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-public class GenericType extends TsType {
-    private final String baseName;
-    private final List<TsType> typeParams = new ArrayList<>();
+public class GenericType extends GenericOrBasicType {
+    private final String typeName;
+    private final List<GenericTypeParam> typeParameters;
 
-    public GenericType(String baseName) {
-        this.baseName = baseName;
+    public GenericType(String typeName, List<GenericTypeParam> typeParameters) {
+        this.typeName = Objects.requireNonNull(typeName);
+        this.typeParameters = typeParameters != null ? new ArrayList<>(typeParameters) : new ArrayList<>();
     }
 
-    public void addTypeParam(TsType param) {
-        typeParams.add(param);
+    public String getTypeName() {
+        return typeName;
     }
 
-    public List<TsType> getTypeParams() {
-        return Collections.unmodifiableList(typeParams);
-    }
-
-    public String getBaseName() {
-        return baseName;
+    public List<GenericTypeParam> getTypeParameters() {
+        return Collections.unmodifiableList(typeParameters);
     }
 
     @Override
     public String toString() {
-        return baseName + "<" + String.join(", ", typeParams.stream().map(Object::toString).toList()) + ">";
+        StringBuilder sb = new StringBuilder(typeName);
+
+        if (!typeParameters.isEmpty()) {
+            sb.append("<");
+            for (int i = 0; i < typeParameters.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(typeParameters.get(i).toString());
+            }
+            sb.append(">");
+        }
+
+        return sb.toString();
     }
 }

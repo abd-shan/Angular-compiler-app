@@ -2,10 +2,10 @@ package css;
 
 import java.util.Objects;
 
-public class Stylesheet {
+public class CssOption {
     private final StylesOption option;
 
-    public Stylesheet(StylesOption option) {
+    public CssOption(StylesOption option) {
         this.option = Objects.requireNonNull(option, "option is null");
     }
 

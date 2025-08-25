@@ -1,36 +1,27 @@
 package  ts.expressions;
 
+import java.util.Objects;
+
+/**
+ * Represents a unary expression
+ */
 public class UnaryExpression implements TsExpression {
-    public enum Operator {
-        NOT("!"),
-        NEGATE("-");
+    private final String operator;
+    private final TsExpression expression;
+    private final boolean isPrefix;
 
-        private final String symbol;
-
-        Operator(String symbol) {
-            this.symbol = symbol;
-        }
-
-        @Override
-        public String toString() {
-            return symbol;
-        }
-    }
-
-    private Operator operator;
-    private TsExpression operand;
-
-    public UnaryExpression(Operator operator, TsExpression operand) {
-        this.operator = operator;
-        this.operand = operand;
+    public UnaryExpression(String operator, TsExpression expression, boolean isPrefix) {
+        this.operator = Objects.requireNonNull(operator);
+        this.expression = Objects.requireNonNull(expression);
+        this.isPrefix = isPrefix;
     }
 
     @Override
     public String toString() {
-        return operator.toString() + operand.toString();
+        if (isPrefix) {
+            return operator + expression.toString();
+        } else {
+            return expression.toString() + operator;
+        }
     }
-
-    // Getters and setters
-    public Operator getOperator() { return operator; }
-    public TsExpression getOperand() { return operand; }
 }

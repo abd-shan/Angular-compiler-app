@@ -7,10 +7,11 @@ import component.SimpleProvider;
 import css.ExternalStyle;
 import css.InlineStyles;
 import css.StylesOption;
-import css.Stylesheet;
+import css.CssOption;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
 import helper.ProviderList;
+import helper.TsStatementBlock;
 import html.ExternalTemplate;
 import html.HtmlOption;
 import html.HtmlTemplate;
@@ -23,9 +24,11 @@ import program.ComponentFile;
 import program.StateFile;
 import state.*;
 import ts.TypeScript;
-import ts.stateManagement.StateProperty;
-import ts.stateManagement.StateValue;
-import ts.stateManagement.ValueType;
+import ts.expressions.*;
+import ts.stateManagement.*;
+import ts.statements.*;
+import ts.stmt.*;
+import ts.types.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,14 +37,13 @@ import java.util.List;
 public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 
-
     @Override
     public AngularApp visitAngularApp(AngularParser.AngularAppContext ctx) {
         AngularApp app = new AngularApp();
 
         for (AngularParser.AngularFileContext fileCtx : ctx.angularFile()) {
             AngularFile file = visitAngularFile(fileCtx); //    ComponentFile or StateFile
-            app.addFile( file);
+            app.addFile(file);
         }
 
         return app;
@@ -113,11 +115,11 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
         String className = ctx.ID().getText();
 
-        String tsCode = ctx.ts().getText();
+        TsBlock tsBlock = visitTs(ctx.ts());
 
         boolean isExported = ctx.EXPORT() != null;
 
-        return new StateServiceClass(injectableDecorator,className, tsCode, isExported );
+        return new StateServiceClass(injectableDecorator, className, tsBlock, isExported);
     }
 
     @Override
@@ -239,7 +241,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 
         HtmlTemplate template = null;
-        Stylesheet styles = null;
+        CssOption styles = null;
         // providers option
         ProvidersOption providersOption = null;
         if (ctx.providersOption() != null) {
@@ -247,9 +249,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         }
 
 
-        TypeScript tsCode = new TypeScript(); // placeholder
+        TsBlock tsBlock = visitTs(ctx.ts());
 
-        return new ComponentFile(className, selector, standalone, componentImports, template, styles,providersOption, tsCode);
+        return new ComponentFile(className, selector, standalone, componentImports, template, styles, providersOption, tsBlock);
     }
 
     @Override
@@ -408,369 +410,890 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 
     @Override
-    public Object visitTs(AngularParser.TsContext ctx) {
-        return super.visitTs(ctx);
+    public TsBlock visitTs(AngularParser.TsContext ctx) {
+        if (ctx == null) {
+            return new TsBlock(new ArrayList<>());
+        }
+
+        TsStatement statement = (TsStatement) visitTsStatement(ctx.tsStatement());
+        List<TsStatement> statements = new ArrayList<>();
+
+        if (statement != null) {
+            statements.add(statement);
+        }
+
+        return new TsBlock(statements);
     }
 
     @Override
-    public Object visitTsStatement(AngularParser.TsStatementContext ctx) {
-        return super.visitTsStatement(ctx);
-    }
-
-    @Override
-    public Object visitDeclareAttribute(AngularParser.DeclareAttributeContext ctx) {
-        return super.visitDeclareAttribute(ctx);
-    }
-
-    @Override
-    public Object visitDeclareAndAssignAttribute(AngularParser.DeclareAndAssignAttributeContext ctx) {
-        return super.visitDeclareAndAssignAttribute(ctx);
-    }
-
-    /**
-     * ObjectStateValue - يمثل قيمة كائن تحتوي على خصائص أخرى
-     */
-    public class ObjectStateValue implements StateValue {
-        private final List<StateProperty> properties;
-
-        public ObjectStateValue(List<StateProperty> properties) {
-            this.properties = properties != null ? new ArrayList<>(properties) : new ArrayList<>();
+    public TsStatement visitTsStatement(AngularParser.TsStatementContext ctx) {
+        if (ctx == null) {
+            return null;
         }
 
-        @Override
-        public ValueType getType() {
-            return ValueType.OBJECT;
-        }
+        List<TsStatement> statements = new ArrayList<>();
 
-        public List<StateProperty> getProperties() {
-            return Collections.unmodifiableList(properties);
-        }
-
-        public void addProperty(StateProperty property) {
-            if (property != null) {
-                properties.add(property);
+        //  tsAttribute before constructor
+        if (ctx.tsAttribute() != null) {
+            for (AngularParser.TsAttributeContext attrCtx : ctx.tsAttribute()) {
+                TsStatement statement = (TsStatement) visit(attrCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
             }
         }
 
-        public StateProperty getProperty(String name) {
-            return properties.stream()
-                    .filter(p -> p.getName().equals(name))
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("{");
-            for (int i = 0; i < properties.size(); i++) {
-                if (i > 0) sb.append(", ");
-                sb.append(properties.get(i).toString());
+        //   stateDecl before constructor
+        if (ctx.stateDecl() != null) {
+            for (AngularParser.StateDeclContext stateDeclCtx : ctx.stateDecl()) {
+                TsStatement statement = (TsStatement) visitStateDecl(stateDeclCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
             }
-            sb.append("}");
-            return sb.toString();
         }
 
-        @Override
-        public String toCodeString() {
-            StringBuilder sb = new StringBuilder("{");
-            for (int i = 0; i < properties.size(); i++) {
-                if (i > 0) sb.append(", ");
-                StateProperty prop = properties.get(i);
-                sb.append(prop.getName()).append(": ").append(prop.getValue().toCodeString());
+        //   method before constructor
+        if (ctx.method() != null) {
+            for (AngularParser.MethodContext methodCtx : ctx.method()) {
+                TsStatement statement = (TsStatement) visitMethod(methodCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
             }
-            sb.append("}");
-            return sb.toString();
+        }
+
+        //  constructor
+        if (ctx.constructor() != null) {
+            TsStatement statement = (TsStatement) visitConstructor(ctx.constructor());
+            if (statement != null) {
+                statements.add(statement);
+            }
+        }
+
+        //   tsAttribute after constructor
+
+        if (ctx.tsAttribute() != null) {
+            for (AngularParser.TsAttributeContext attrCtx : ctx.tsAttribute()) {
+                TsStatement statement = (TsStatement) visit(attrCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+        }
+
+        //   stateDecl after constructor
+        if (ctx.stateDecl() != null) {
+            for (AngularParser.StateDeclContext stateDeclCtx : ctx.stateDecl()) {
+                TsStatement statement = (TsStatement) visitStateDecl(stateDeclCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+        }
+
+        //   method after constructor
+        if (ctx.method() != null) {
+            for (AngularParser.MethodContext methodCtx : ctx.method()) {
+                TsStatement statement = (TsStatement) visitMethod(methodCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+        }
+
+        // result
+        if (statements.isEmpty()) {
+            return null;
+        } else if (statements.size() == 1) {
+            return statements.get(0);
+        } else {
+            return new TsStatementBlock(statements);
         }
     }
+
     @Override
-    public Object visitConstructor(AngularParser.ConstructorContext ctx) {
-        return super.visitConstructor(ctx);
+    public TsAttribute visitDeclareAttribute(AngularParser.DeclareAttributeContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        String primitiveDataType = extractPrimitiveDataType(ctx.primitiveDataType());
+        boolean isReadonly = isReadonly(ctx.primitiveDataType());
+        String name = ctx.ID().getText();
+        TsType type = (TsType) visitTsType(ctx.tsType());
+
+        return new DeclareAttribute(name, primitiveDataType, type, isReadonly);
     }
 
     @Override
-    public Object visitConstructorParams(AngularParser.ConstructorParamsContext ctx) {
-        return super.visitConstructorParams(ctx);
+    public TsAttribute visitDeclareAndAssignAttribute(AngularParser.DeclareAndAssignAttributeContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        String primitiveDataType = extractPrimitiveDataType(ctx.primitiveDataType());
+        boolean isReadonly = isReadonly(ctx.primitiveDataType());
+        String name = ctx.ID().getText();
+        TsType type = ctx.tsType() != null ? (TsType) visitTsType(ctx.tsType()) : null;
+        TsExpression expression = ctx.tsExpr() != null ? (TsExpression) visitTsExpr(ctx.tsExpr()) : null;
+
+        return new DeclareAndAssignAttribute(name, primitiveDataType, type, isReadonly, expression);
+    }
+
+
+    @Override
+    public StateDeclaration visitStateDecl(AngularParser.StateDeclContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        List<StateProperty> properties = new ArrayList<>();
+
+        if (ctx.stateProperty() != null) {
+            for (AngularParser.StatePropertyContext propCtx : ctx.stateProperty()) {
+                StateProperty property = (StateProperty) visitStateProperty(propCtx);
+                if (property != null) {
+                    properties.add(property);
+                }
+            }
+        }
+
+        return new StateDeclaration(properties);
     }
 
     @Override
-    public Object visitConstructorParam(AngularParser.ConstructorParamContext ctx) {
-        return super.visitConstructorParam(ctx);
+    public StateProperty visitStateProperty(AngularParser.StatePropertyContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        String name = ctx.ID().getText();
+        StateValue value = (StateValue) visitStateValue(ctx.stateValue());
+
+        return new StateProperty(name, value);
     }
 
     @Override
-    public Object visitMethod(AngularParser.MethodContext ctx) {
-        return super.visitMethod(ctx);
+    public StateValue visitStateValue(AngularParser.StateValueContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        if (ctx.arrayValue() != null) {
+            return (StateValue) visitArrayValue(ctx.arrayValue());
+        } else if (ctx.objectValue() != null) {
+            return (StateValue) visitObjectValue(ctx.objectValue());
+        } else if (ctx.STRING() != null) {
+            return new PrimitiveStateValue(ctx.STRING().getText(), ValueType.STRING);
+        } else if (ctx.NUMERIC_VALUE() != null) {
+            return new PrimitiveStateValue(ctx.NUMERIC_VALUE().getText(), ValueType.NUMBER);
+        } else if (ctx.NULL() != null) {
+            return new PrimitiveStateValue("null", ValueType.NULL);
+        } else if (ctx.ID() != null) {
+            return new PrimitiveStateValue(ctx.ID().getText(), ValueType.IDENTIFIER);
+        }
+
+        return null;
     }
 
     @Override
-    public Object visitMethodParams(AngularParser.MethodParamsContext ctx) {
-        return super.visitMethodParams(ctx);
+    public ArrayStateValue visitArrayValue(AngularParser.ArrayValueContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        List<StateValue> values = new ArrayList<>();
+
+        if (ctx.stateValue() != null) {
+            for (AngularParser.StateValueContext valueCtx : ctx.stateValue()) {
+                StateValue value = (StateValue) visitStateValue(valueCtx);
+                if (value != null) {
+                    values.add(value);
+                }
+            }
+        }
+
+        return new ArrayStateValue(values);
     }
 
     @Override
-    public Object visitMethodParam(AngularParser.MethodParamContext ctx) {
-        return super.visitMethodParam(ctx);
+    public ObjectStateValue visitObjectValue(AngularParser.ObjectValueContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        List<StateProperty> properties = new ArrayList<>();
+
+        if (ctx.stateProperty() != null) {
+            for (AngularParser.StatePropertyContext propCtx : ctx.stateProperty()) {
+                StateProperty property = (StateProperty) visitStateProperty(propCtx);
+                if (property != null) {
+                    properties.add(property);
+                }
+            }
+        }
+
+        return new ObjectStateValue(properties);
+    }
+
+
+    @Override
+    public Constructor visitConstructor(AngularParser.ConstructorContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        String primitiveDataType = extractPrimitiveDataType(ctx.primitiveDataType());
+        List<ConstructorParam> parameters = new ArrayList<>();
+        TsBlock body = null;
+
+        if (ctx.constructorParams() != null) {
+            parameters = (List<ConstructorParam>) visitConstructorParams(ctx.constructorParams());
+        }
+
+        if (ctx.tsStmt() != null) {
+            List<TsStatement> statements = new ArrayList<>();
+            for (AngularParser.TsStmtContext stmtCtx : ctx.tsStmt()) {
+                TsStatement statement = (TsStatement) visitTsStmt(stmtCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+            body = new TsBlock(statements);
+        }
+
+        return new Constructor(parameters, body, primitiveDataType);
     }
 
     @Override
-    public Object visitParamType(AngularParser.ParamTypeContext ctx) {
-        return super.visitParamType(ctx);
+    public List<ConstructorParam> visitConstructorParams(AngularParser.ConstructorParamsContext ctx) {
+        List<ConstructorParam> parameters = new ArrayList<>();
+
+        if (ctx == null) {
+            return parameters;
+        }
+
+        for (AngularParser.ConstructorParamContext paramCtx : ctx.constructorParam()) {
+            ConstructorParam param = (ConstructorParam) visitConstructorParam(paramCtx);
+            if (param != null) {
+                parameters.add(param);
+            }
+        }
+
+        return parameters;
     }
 
     @Override
-    public Object visitTsType(AngularParser.TsTypeContext ctx) {
-        return super.visitTsType(ctx);
+    public ConstructorParam visitConstructorParam(AngularParser.ConstructorParamContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        String primitiveDataType = extractPrimitiveDataType(ctx.primitiveDataType());
+        String name = ctx.ID().getText();
+        TsType type = (TsType) visitTsType(ctx.tsType());
+
+        return new ConstructorParam(name, primitiveDataType, type);
     }
 
     @Override
-    public Object visitGenericOrBasicType(AngularParser.GenericOrBasicTypeContext ctx) {
-        return super.visitGenericOrBasicType(ctx);
+    public Method visitMethod(AngularParser.MethodContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        String primitiveDataType = extractPrimitiveDataType(ctx.primitiveDataType());
+        String name = ctx.ID().getText();
+        List<MethodParam> parameters = new ArrayList<>();
+        TsType returnType = null;
+        TsBlock body = null;
+
+        if (ctx.methodParams() != null) {
+            parameters = (List<MethodParam>) visitMethodParams(ctx.methodParams());
+        }
+
+        if (ctx.tsType() != null) {
+            returnType = (TsType) visitTsType(ctx.tsType());
+        }
+
+        if (ctx.tsStmt() != null) {
+            List<TsStatement> statements = new ArrayList<>();
+            for (AngularParser.TsStmtContext stmtCtx : ctx.tsStmt()) {
+                TsStatement statement = (TsStatement) visitTsStmt(stmtCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+            body = new TsBlock(statements);
+        }
+
+        return new Method(name, primitiveDataType, parameters, returnType, body);
     }
 
     @Override
-    public Object visitGenericType(AngularParser.GenericTypeContext ctx) {
-        return super.visitGenericType(ctx);
+    public List<MethodParam> visitMethodParams(AngularParser.MethodParamsContext ctx) {
+        List<MethodParam> parameters = new ArrayList<>();
+
+        if (ctx == null) {
+            return parameters;
+        }
+
+        for (AngularParser.MethodParamContext paramCtx : ctx.methodParam()) {
+            MethodParam param = (MethodParam) visitMethodParam(paramCtx);
+            if (param != null) {
+                parameters.add(param);
+            }
+        }
+
+        return parameters;
     }
 
     @Override
-    public Object visitGenericTypeParam(AngularParser.GenericTypeParamContext ctx) {
-        return super.visitGenericTypeParam(ctx);
+    public MethodParam visitMethodParam(AngularParser.MethodParamContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        String name = ctx.ID().getText();
+        boolean isOptional = ctx.QUESTION() != null;
+        ParamType paramType = (ParamType) visitParamType(ctx.paramType());
+
+        return new MethodParam(name, paramType, isOptional);
     }
 
     @Override
-    public Object visitArrayType(AngularParser.ArrayTypeContext ctx) {
-        return super.visitArrayType(ctx);
+    public ParamType visitParamType(AngularParser.ParamTypeContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        if (ctx.EVENT() != null) {
+            return new ParamType(null, true);
+        } else if (ctx.tsType() != null) {
+            TsType type = (TsType) visitTsType(ctx.tsType());
+            return new ParamType(type, false);
+        }
+
+        return new ParamType(null, false);
     }
 
     @Override
-    public Object visitType(AngularParser.TypeContext ctx) {
-        return super.visitType(ctx);
+    public TsType visitTsType(AngularParser.TsTypeContext ctx) {
+        List<GenericOrBasicType> types = new ArrayList<>();
+
+        for (AngularParser.GenericOrBasicTypeContext typeCtx : ctx.genericOrBasicType()) {
+            GenericOrBasicType type = (GenericOrBasicType) visitGenericOrBasicType(typeCtx);
+            if (type != null) {
+                types.add(type);
+            }
+        }
+
+        return new TsType(types);
     }
 
     @Override
-    public Object visitDeclareVariable(AngularParser.DeclareVariableContext ctx) {
-        return super.visitDeclareVariable(ctx);
+    public GenericOrBasicType visitGenericOrBasicType(AngularParser.GenericOrBasicTypeContext ctx) {
+        if (ctx.genericType() != null) {
+            return (GenericOrBasicType) visitGenericType(ctx.genericType());
+        } else if (ctx.arrayType() != null) {
+            return (GenericOrBasicType) visitArrayType(ctx.arrayType());
+        } else if (ctx.type() != null) {
+            return (GenericOrBasicType) visitType(ctx.type());
+        } else if (ctx.ID() != null) {
+            return new BasicType(ctx.ID().getText()); // Custom type
+        } else if (ctx.UNDEFINED() != null) {
+            return new BasicType(BasicType.Primitive.UNDEFINED);
+        }
+
+        return new BasicType(BasicType.Primitive.ANY); // Default fallback
     }
 
     @Override
-    public Object visitDeclareAndAssign(AngularParser.DeclareAndAssignContext ctx) {
-        return super.visitDeclareAndAssign(ctx);
+    public GenericType visitGenericType(AngularParser.GenericTypeContext ctx) {
+        String typeName = ctx.ID().getText();
+        List<GenericTypeParam> typeParameters = new ArrayList<>();
+
+        for (AngularParser.GenericTypeParamContext paramCtx : ctx.genericTypeParam()) {
+            GenericTypeParam param = (GenericTypeParam) visitGenericTypeParam(paramCtx);
+            if (param != null) {
+                typeParameters.add(param);
+            }
+        }
+
+        return new GenericType(typeName, typeParameters);
     }
 
     @Override
-    public Object visitAssign(AngularParser.AssignContext ctx) {
-        return super.visitAssign(ctx);
+    public GenericTypeParam visitGenericTypeParam(AngularParser.GenericTypeParamContext ctx) {
+        if (ctx.genericOrBasicType() != null) {
+            GenericOrBasicType type = (GenericOrBasicType) visitGenericOrBasicType(ctx.genericOrBasicType());
+            return new TypeGenericParam(type);
+        } else if (ctx.STRING() != null) {
+            return new StringGenericParam(ctx.STRING().getText());
+        }
+
+        return null;
     }
 
     @Override
-    public Object visitIf(AngularParser.IfContext ctx) {
-        return super.visitIf(ctx);
+    public ArrayType visitArrayType(AngularParser.ArrayTypeContext ctx) {
+        GenericOrBasicType elementType;
+
+        if (ctx.type() != null) {
+            elementType = (GenericOrBasicType) visitType(ctx.type());
+        } else if (ctx.ID() != null) {
+            elementType = new BasicType(ctx.ID().getText()); // Custom type
+        } else {
+            elementType = new BasicType(BasicType.Primitive.ANY); // Default fallback
+        }
+
+        return new ArrayType(elementType);
     }
 
     @Override
-    public Object visitFor(AngularParser.ForContext ctx) {
-        return super.visitFor(ctx);
+    public BasicType visitType(AngularParser.TypeContext ctx) {
+        if (ctx.NUMBER() != null) {
+            return new BasicType(BasicType.Primitive.NUMBER);
+        } else if (ctx.STRINGDL() != null) {
+            return new BasicType(BasicType.Primitive.STRING);
+        } else if (ctx.BOOLEAN() != null) {
+            return new BasicType(BasicType.Primitive.BOOLEAN);
+        } else if (ctx.ANY() != null) {
+            return new BasicType(BasicType.Primitive.ANY);
+        } else if (ctx.NULL() != null) {
+            return new BasicType(BasicType.Primitive.NULL);
+        }
+
+        return new BasicType(BasicType.Primitive.ANY); // Default fallback
+    }
+
+
+    // Statement visitor methods
+
+    @Override
+    public TsStatement visitDeclareVariable(AngularParser.DeclareVariableContext ctx) {
+        String keyword = ctx.LET() != null ? "let" : "const";
+        String name = ctx.ID().getText();
+        TsType type = ctx.tsType() != null ? (TsType) visitTsType(ctx.tsType()) : null;
+
+        return new DeclareVariable(keyword, name, type);
     }
 
     @Override
-    public Object visitReturnStatement(AngularParser.ReturnStatementContext ctx) {
-        return super.visitReturnStatement(ctx);
+    public TsStatement visitDeclareAndAssign(AngularParser.DeclareAndAssignContext ctx) {
+        String keyword = ctx.LET() != null ? "let" : "const";
+        String name = ctx.ID().getText();
+        TsType type = ctx.tsType() != null ? (TsType) visitTsType(ctx.tsType()) : null;
+        TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
+
+        return new DeclareAndAssign(keyword, name, type, expression);
     }
 
     @Override
-    public Object visitExprStatement(AngularParser.ExprStatementContext ctx) {
-        return super.visitExprStatement(ctx);
+    public TsStatement visitAssign(AngularParser.AssignContext ctx) {
+        LeftHandSide lhs = (LeftHandSide) visitLeftHandSide(ctx.leftHandSide());
+        TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
+
+        return new Assign(lhs, expression);
     }
 
     @Override
-    public Object visitTernaryExpr(AngularParser.TernaryExprContext ctx) {
-        return super.visitTernaryExpr(ctx);
+    public TsStatement visitIf(AngularParser.IfContext ctx) {
+        TsExpression condition = ctx.tsExpr() != null ? (TsExpression) visitTsExpr(ctx.tsExpr()) : null;
+
+        List<TsStatement> statements = new ArrayList<>();
+        if (ctx.tsStmt() != null) {
+            for (AngularParser.TsStmtContext stmtCtx : ctx.tsStmt()) {
+                TsStatement statement = (TsStatement) visitTsStmt(stmtCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+        }
+        TsBlock body = new TsBlock(statements);
+
+        return new IfStatement(condition, body);
     }
 
     @Override
-    public Object visitOrExpr(AngularParser.OrExprContext ctx) {
-        return super.visitOrExpr(ctx);
+    public TsStatement visitFor(AngularParser.ForContext ctx) {
+        String initializer = ctx.STRING() != null ? ctx.STRING().getText() : null;
+
+        List<TsStatement> statements = new ArrayList<>();
+        if (ctx.tsStmt() != null) {
+            for (AngularParser.TsStmtContext stmtCtx : ctx.tsStmt()) {
+                TsStatement statement = (TsStatement) visitTsStmt(stmtCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+        }
+        TsBlock body = new TsBlock(statements);
+
+        return new ForStatement(initializer, body);
     }
 
     @Override
-    public Object visitToAnd(AngularParser.ToAndContext ctx) {
-        return super.visitToAnd(ctx);
+    public TsStatement visitReturnStatement(AngularParser.ReturnStatementContext ctx) {
+        TsExpression expression = ctx.tsExpr() != null ? (TsExpression) visitTsExpr(ctx.tsExpr()) : null;
+        return new ReturnStatement(expression);
     }
 
     @Override
-    public Object visitLeftHandSide(AngularParser.LeftHandSideContext ctx) {
-        return super.visitLeftHandSide(ctx);
+    public TsStatement visitExprStatement(AngularParser.ExprStatementContext ctx) {
+        TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
+        return new ExprStatement(expression);
+    }
+
+    // Expression visitor methods
+
+    @Override
+    public TsExpression visitOrExpr(AngularParser.OrExprContext ctx) {
+        TsExpression left = (TsExpression) visit(ctx.tsExpr(0));
+        TsExpression right = (TsExpression) visit(ctx.tsExpr(1));
+        return new BinaryExpression(left, "||", right);
     }
 
     @Override
-    public Object visitToEq(AngularParser.ToEqContext ctx) {
-        return super.visitToEq(ctx);
+    public TsExpression visitToAnd(AngularParser.ToAndContext ctx) {
+        return (TsExpression) visit(ctx.tsAndExpr());
     }
 
     @Override
-    public Object visitAndExpr(AngularParser.AndExprContext ctx) {
-        return super.visitAndExpr(ctx);
+    public TsExpression visitTernaryExpr(AngularParser.TernaryExprContext ctx) {
+        TsExpression condition = (TsExpression) visit(ctx.tsExpr(0));
+        TsExpression trueExpr = (TsExpression) visit(ctx.tsExpr(1));
+        TsExpression falseExpr = (TsExpression) visit(ctx.tsExpr(2));
+        return new TernaryExpression(condition, trueExpr, falseExpr);
     }
 
     @Override
-    public Object visitToRel(AngularParser.ToRelContext ctx) {
-        return super.visitToRel(ctx);
+    public LeftHandSide visitLeftHandSide(AngularParser.LeftHandSideContext ctx) {
+        boolean hasThis = ctx.THIS() != null;
+        String baseName = ctx.ID(0).getText();
+
+        List<LeftHandSide.Access> accesses = new ArrayList<>();
+        for (int i = 1; i < ctx.ID().size(); i++) {
+            accesses.add(new LeftHandSide.DotAccess(ctx.ID(i).getText()));
+        }
+
+        for (AngularParser.TsExprContext exprCtx : ctx.tsExpr()) {
+            TsExpression expr = (TsExpression) visit(exprCtx);
+            accesses.add(new LeftHandSide.BracketAccess(expr));
+        }
+
+        return new LeftHandSide(hasThis, baseName, accesses);
     }
 
     @Override
-    public Object visitEqNeq(AngularParser.EqNeqContext ctx) {
-        return super.visitEqNeq(ctx);
+    public TsExpression visitAndExpr(AngularParser.AndExprContext ctx) {
+        TsExpression left = (TsExpression) visit(ctx.tsAndExpr());
+        TsExpression right = (TsExpression) visit(ctx.tsEqExpr());
+        return new BinaryExpression(left, "&&", right);
     }
 
     @Override
-    public Object visitToAdd(AngularParser.ToAddContext ctx) {
-        return super.visitToAdd(ctx);
+    public TsExpression visitToEq(AngularParser.ToEqContext ctx) {
+        return (TsExpression) visit(ctx.tsEqExpr());
     }
 
     @Override
-    public Object visitRelational(AngularParser.RelationalContext ctx) {
-        return super.visitRelational(ctx);
+    public TsExpression visitEqNeq(AngularParser.EqNeqContext ctx) {
+        TsExpression left = (TsExpression) visit(ctx.tsEqExpr());
+        String operator = ctx.EQEQ() != null ? "==" :
+                ctx.EQEQEQ() != null ? "===" :
+                        ctx.NEQ() != null ? "!=" : "!==";
+        TsExpression right = (TsExpression) visit(ctx.tsRelExpr());
+        return new BinaryExpression(left, operator, right);
     }
 
     @Override
-    public Object visitAddSub(AngularParser.AddSubContext ctx) {
-        return super.visitAddSub(ctx);
+    public TsExpression visitToRel(AngularParser.ToRelContext ctx) {
+        return (TsExpression) visit(ctx.tsRelExpr());
     }
 
     @Override
-    public Object visitToMul(AngularParser.ToMulContext ctx) {
-        return super.visitToMul(ctx);
+    public TsExpression visitRelational(AngularParser.RelationalContext ctx) {
+        TsExpression left = (TsExpression) visit(ctx.tsRelExpr());
+        String operator = ctx.TAG_OPEN() != null ? "<" :
+                ctx.TAG_CLOSE() != null ? ">" :
+                        ctx.LTE() != null ? "<=" : ">=";
+        TsExpression right = (TsExpression) visit(ctx.tsAddExpr());
+        return new BinaryExpression(left, operator, right);
     }
 
     @Override
-    public Object visitToUnary(AngularParser.ToUnaryContext ctx) {
-        return super.visitToUnary(ctx);
+    public TsExpression visitAddSub(AngularParser.AddSubContext ctx) {
+        TsExpression left = (TsExpression) visit(ctx.tsAddExpr());
+        String operator = ctx.PLUS() != null ? "+" : "-";
+        TsExpression right = (TsExpression) visit(ctx.tsMulExpr());
+        return new BinaryExpression(left, operator, right);
     }
 
     @Override
-    public Object visitMulDiv(AngularParser.MulDivContext ctx) {
-        return super.visitMulDiv(ctx);
+    public TsExpression visitToMul(AngularParser.ToMulContext ctx) {
+        return (TsExpression) visit(ctx.tsMulExpr());
     }
 
     @Override
-    public Object visitUnaryOp(AngularParser.UnaryOpContext ctx) {
-        return super.visitUnaryOp(ctx);
+    public TsExpression visitMulDiv(AngularParser.MulDivContext ctx) {
+        TsExpression left = (TsExpression) visit(ctx.tsMulExpr());
+        String operator = ctx.STAR() != null ? "*" : "/";
+        TsExpression right = (TsExpression) visit(ctx.tsUnaryExpr());
+        return new BinaryExpression(left, operator, right);
     }
 
     @Override
-    public Object visitToPrimary(AngularParser.ToPrimaryContext ctx) {
-        return super.visitToPrimary(ctx);
+    public TsExpression visitUnaryOp(AngularParser.UnaryOpContext ctx) {
+        String operator = ctx.NOT_OP() != null ? "!" :
+                ctx.PLUS() != null ? "+" : "-";
+        TsExpression expression = (TsExpression) visit(ctx.tsUnaryExpr());
+        return new UnaryExpression(operator, expression, true);
     }
 
     @Override
-    public Object visitTsPrimary(AngularParser.TsPrimaryContext ctx) {
-        return super.visitTsPrimary(ctx);
+    public TsExpression visitToUnary(AngularParser.ToUnaryContext ctx) {
+        return (TsExpression) visit(ctx.tsUnaryExpr());
     }
 
     @Override
-    public Object visitThisRef(AngularParser.ThisRefContext ctx) {
-        return super.visitThisRef(ctx);
+    public TsExpression visitToPrimary(AngularParser.ToPrimaryContext ctx) {
+        return (TsExpression) visit(ctx.tsPrimary());
+    }
+
+    // ============ دوال الـ Primary Expressions ============
+    @Override
+    public PrimaryExpression visitTsPrimary(AngularParser.TsPrimaryContext ctx) {
+        TsAtom atom = (TsAtom) visit(ctx.tsAtom());
+        List<TsPostfix> postfixes = new ArrayList<>();
+
+        for (AngularParser.TsPostfixContext postfixCtx : ctx.tsPostfix()) {
+            TsPostfix postfix = (TsPostfix) visit(postfixCtx);
+            if (postfix != null) {
+                postfixes.add(postfix);
+            }
+        }
+
+        return new PrimaryExpression(atom, postfixes);
     }
 
     @Override
-    public Object visitStoredID(AngularParser.StoredIDContext ctx) {
-        return super.visitStoredID(ctx);
+    public TsAtom visitThisRef(AngularParser.ThisRefContext ctx) {
+        return new ThisRef();
     }
 
     @Override
-    public Object visitString(AngularParser.StringContext ctx) {
-        return super.visitString(ctx);
+    public TsAtom visitStoredID(AngularParser.StoredIDContext ctx) {
+        return new StoredID(ctx.ID().getText());
     }
 
     @Override
-    public Object visitNumber(AngularParser.NumberContext ctx) {
-        return super.visitNumber(ctx);
+    public TsAtom visitString(AngularParser.StringContext ctx) {
+        return new StringLiteral(ctx.STRING().getText());
     }
 
     @Override
-    public Object visitBooleanTrue(AngularParser.BooleanTrueContext ctx) {
-        return super.visitBooleanTrue(ctx);
+    public TsAtom visitNumber(AngularParser.NumberContext ctx) {
+        return new NumberLiteral(ctx.NUMERIC_VALUE().getText());
     }
 
     @Override
-    public Object visitBooleanFalse(AngularParser.BooleanFalseContext ctx) {
-        return super.visitBooleanFalse(ctx);
+    public TsAtom visitBooleanTrue(AngularParser.BooleanTrueContext ctx) {
+        return new BooleanLiteral(true);
     }
 
     @Override
-    public Object visitKeyValue(AngularParser.KeyValueContext ctx) {
-        return super.visitKeyValue(ctx);
+    public TsAtom visitBooleanFalse(AngularParser.BooleanFalseContext ctx) {
+        return new BooleanLiteral(false);
     }
 
     @Override
-    public Object visitArray(AngularParser.ArrayContext ctx) {
-        return super.visitArray(ctx);
+    public TsAtom visitKeyValue(AngularParser.KeyValueContext ctx) {
+        List<KeyValuePair> properties = new ArrayList<>();
+        if (ctx.keyValuePair() != null) {
+            for (AngularParser.KeyValuePairContext kvCtx : ctx.keyValuePair()) {
+                KeyValuePair kv = (KeyValuePair) visitKeyValuePair(kvCtx);
+                if (kv != null) {
+                    properties.add(kv);
+                }
+            }
+        }
+        return new ObjectLiteral(properties);
     }
 
     @Override
-    public Object visitParen(AngularParser.ParenContext ctx) {
-        return super.visitParen(ctx);
+    public TsAtom visitArray(AngularParser.ArrayContext ctx) {
+        List<SpreadOrExpr> elements = new ArrayList<>();
+        if (ctx.spreadOrExpr() != null) {
+            for (AngularParser.SpreadOrExprContext soeCtx : ctx.spreadOrExpr()) {
+                SpreadOrExpr soe = (SpreadOrExpr) visitSpreadOrExpr(soeCtx);
+                if (soe != null) {
+                    elements.add(soe);
+                }
+            }
+        }
+        return new ArrayLiteral(elements);
     }
 
     @Override
-    public Object visitArrowFn(AngularParser.ArrowFnContext ctx) {
-        return super.visitArrowFn(ctx);
+    public TsAtom visitParen(AngularParser.ParenContext ctx) {
+        TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
+        return new ParenExpression(expression);
     }
 
     @Override
-    public Object visitNull(AngularParser.NullContext ctx) {
-        return super.visitNull(ctx);
+    public TsAtom visitArrowFn(AngularParser.ArrowFnContext ctx) {
+        return (TsAtom) visitArrowFunction(ctx.arrowFunction());
     }
 
     @Override
-    public Object visitNewExpression(AngularParser.NewExpressionContext ctx) {
-        return super.visitNewExpression(ctx);
+    public TsAtom visitNull(AngularParser.NullContext ctx) {
+        return new NullLiteral();
     }
 
     @Override
-    public Object visitDotCall(AngularParser.DotCallContext ctx) {
-        return super.visitDotCall(ctx);
+    public TsAtom visitNewExpression(AngularParser.NewExpressionContext ctx) {
+        String constructor = ctx.ID().getText();
+
+        List<GenericTypeParam> typeArguments = new ArrayList<>();
+        if (ctx.genericTypeArguments() != null) {
+            typeArguments = (List<GenericTypeParam>) visitGenericTypeArguments(ctx.genericTypeArguments());
+        }
+
+        List<TsExpression> arguments = new ArrayList<>();
+        if (ctx.tsExpr() != null) {
+            for (AngularParser.TsExprContext exprCtx : ctx.tsExpr()) {
+                TsExpression expr = (TsExpression) visitTsExpr(exprCtx);
+                if (expr != null) {
+                    arguments.add(expr);
+                }
+            }
+        }
+
+        return new NewExpression(constructor, typeArguments, arguments);
     }
 
     @Override
-    public Object visitDotAccess(AngularParser.DotAccessContext ctx) {
-        return super.visitDotAccess(ctx);
+    public TsPostfix visitDotCall(AngularParser.DotCallContext ctx) {
+        String methodName = ctx.ID().getText();
+
+        List<TsExpression> arguments = new ArrayList<>();
+        if (ctx.tsExpr() != null) {
+            for (AngularParser.TsExprContext exprCtx : ctx.tsExpr()) {
+                TsExpression expr = (TsExpression) visitTsExpr(exprCtx);
+                if (expr != null) {
+                    arguments.add(expr);
+                }
+            }
+        }
+
+        return new DotCall(methodName, arguments);
     }
 
     @Override
-    public Object visitBracketAccess(AngularParser.BracketAccessContext ctx) {
-        return super.visitBracketAccess(ctx);
+    public TsPostfix visitDotAccess(AngularParser.DotAccessContext ctx) {
+        return new DotAccessPostfix(ctx.ID().getText());
     }
 
     @Override
-    public Object visitCall(AngularParser.CallContext ctx) {
-        return super.visitCall(ctx);
+    public TsPostfix visitBracketAccess(AngularParser.BracketAccessContext ctx) {
+        TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
+        return new BracketAccessPostfix(expression);
     }
 
     @Override
-    public Object visitGenericTypeArguments(AngularParser.GenericTypeArgumentsContext ctx) {
-        return super.visitGenericTypeArguments(ctx);
+    public TsPostfix visitCall(AngularParser.CallContext ctx) {
+        boolean hasSpread = ctx.ELLIPSIS() != null;
+
+        List<TsExpression> arguments = new ArrayList<>();
+        if (ctx.tsExpr() != null) {
+            for (AngularParser.TsExprContext exprCtx : ctx.tsExpr()) {
+                TsExpression expr = (TsExpression) visitTsExpr(exprCtx);
+                if (expr != null) {
+                    arguments.add(expr);
+                }
+            }
+        }
+
+        return new CallPostfix(hasSpread, arguments);
     }
 
     @Override
-    public Object visitSpreadOrExpr(AngularParser.SpreadOrExprContext ctx) {
-        return super.visitSpreadOrExpr(ctx);
+    public List<GenericTypeParam> visitGenericTypeArguments(AngularParser.GenericTypeArgumentsContext ctx) {
+        List<GenericTypeParam> typeParams = new ArrayList<>();
+        if (ctx.genericTypeParam() != null) {
+            for (AngularParser.GenericTypeParamContext paramCtx : ctx.genericTypeParam()) {
+                GenericTypeParam param = (GenericTypeParam) visitGenericTypeParam(paramCtx);
+                if (param != null) {
+                    typeParams.add(param);
+                }
+            }
+        }
+        return typeParams;
     }
 
     @Override
-    public Object visitArrowFunction(AngularParser.ArrowFunctionContext ctx) {
-        return super.visitArrowFunction(ctx);
+    public SpreadOrExpr visitSpreadOrExpr(AngularParser.SpreadOrExprContext ctx) {
+        boolean isSpread = ctx.ELLIPSIS() != null;
+        TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
+        return new SpreadOrExpr(isSpread, expression);
     }
 
     @Override
-    public Object visitKeyValuePair(AngularParser.KeyValuePairContext ctx) {
-        return super.visitKeyValuePair(ctx);
+    public ArrowFunction visitArrowFunction(AngularParser.ArrowFunctionContext ctx) {
+        List<String> parameters = new ArrayList<>();
+        if (ctx.ID() != null) {
+            for (int i = 0; i < ctx.ID().size(); i++) {
+                parameters.add(ctx.ID(i).getText());
+            }
+        }
+
+        TsExpression bodyExpr = null;
+        TsBlock bodyBlock = null;
+
+        if (ctx.tsExpr() != null) {
+            bodyExpr = (TsExpression) visitTsExpr(ctx.tsExpr());
+        } else if (ctx.tsStmt() != null) {
+            List<TsStatement> statements = new ArrayList<>();
+            for (AngularParser.TsStmtContext stmtCtx : ctx.tsStmt()) {
+                TsStatement statement = (TsStatement) visitTsStmt(stmtCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+            bodyBlock = new TsBlock(statements);
+        }
+
+        return new ArrowFunction(parameters, bodyExpr, bodyBlock);
     }
 
     @Override
-    public Object visitPrimitiveDataType(AngularParser.PrimitiveDataTypeContext ctx) {
-        return super.visitPrimitiveDataType(ctx);
+    public KeyValuePair visitKeyValuePair(AngularParser.KeyValuePairContext ctx) {
+        String key;
+        if (ctx.ID() != null) {
+            key = ctx.ID().getText();
+        } else if (ctx.STRING() != null) {
+            key = ctx.STRING().getText();
+        } else {
+            // Handle the case where both are null
+            key = ""; // or throw a more descriptive exception
+        }
+
+        boolean isSpread = ctx.ELLIPSIS() != null;
+        TsExpression value = (TsExpression) visitTsExpr(ctx.tsExpr());
+
+        return new KeyValuePair(key, value, isSpread);
     }
+
+    @Override
+    public String visitPrimitiveDataType(AngularParser.PrimitiveDataTypeContext ctx) {
+        if (ctx.PUBLIC() != null) return "public";
+        if (ctx.PRIVATE() != null) return "private";
+        if (ctx.PROTECTED() != null) return "protected";
+        return null;
+    }
+
 
     @Override
     public Object visitHtml(AngularParser.HtmlContext ctx) {
@@ -821,4 +1344,59 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     public Object visitCssDeclaration(AngularParser.CssDeclarationContext ctx) {
         return super.visitCssDeclaration(ctx);
     }
+
+// ==================== Methods helper ====================
+
+    private String extractPrimitiveDataType(AngularParser.PrimitiveDataTypeContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        if (ctx.PUBLIC() != null) return "public";
+        if (ctx.PRIVATE() != null) return "private";
+        if (ctx.PROTECTED() != null) return "protected";
+
+        return null;
+    }
+
+    private boolean isReadonly(AngularParser.PrimitiveDataTypeContext ctx) {
+        return ctx != null && ctx.READONLY() != null;
+
+    }
+
+    private List<TsStatement> visitStmtList(List<AngularParser.TsStmtContext> stmts) {
+        List<TsStatement> statements = new ArrayList<>();
+        if (stmts != null) {
+            for (AngularParser.TsStmtContext stmtCtx : stmts) {
+                TsStatement statement = (TsStatement) visit(stmtCtx);
+                if (statement != null) {
+                    statements.add(statement);
+                }
+            }
+        }
+        return statements;
+    }
+
+    private TsStatement visitTsStmt(AngularParser.TsStmtContext stmtCtx) {
+        return stmtCtx != null ? (TsStatement) visit(stmtCtx) : null;
+    }
+
+    private List<TsExpression> visitExprList(List<AngularParser.TsExprContext> exprs) {
+        List<TsExpression> expressions = new ArrayList<>();
+        if (exprs != null) {
+            for (AngularParser.TsExprContext exprCtx : exprs) {
+                TsExpression expression = (TsExpression) visit(exprCtx);
+                if (expression != null) {
+                    expressions.add(expression);
+                }
+            }
+        }
+        return expressions;
+    }
+
+    private TsExpression visitTsExpr(AngularParser.TsExprContext exprCtx) {
+        return exprCtx != null ? (TsExpression) visit(exprCtx) : null;
+    }
+
+
 }

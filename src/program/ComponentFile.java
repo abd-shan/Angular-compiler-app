@@ -1,9 +1,10 @@
 package program;
 
 import component.ProvidersOption;
-import css.Stylesheet;
+import css.CssOption;
 import html.HtmlTemplate;
 import ts.TypeScript;
+import ts.statements.TsBlock;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,18 +28,18 @@ public class ComponentFile implements AngularFile {
     private final boolean standalone;
     private final List<String> componentImports; // imports: [A,B,...] inside @Component
     private final HtmlTemplate template;         // null if don't exist
-    private final Stylesheet styles;             // null if don't exist
+    private final CssOption styles;             // null if don't exist
     private final ProvidersOption providers;
-    private final TypeScript tsCode;
+    private final TsBlock tsCode;
 
     public ComponentFile(String className,
                          String selector,
                          boolean standalone,
                          List<String> componentImports,
                          HtmlTemplate template,
-                         Stylesheet styles,
+                         CssOption styles,
                          ProvidersOption providers,
-                         TypeScript tsCode) {
+                         TsBlock tsCode) {
 
         this.className = Objects.requireNonNull(className, "className is null");
         this.selector = Objects.requireNonNull(selector, "selector is null");
@@ -72,7 +73,7 @@ public class ComponentFile implements AngularFile {
         return template;
     }
 
-    public Stylesheet getStyles() {
+    public CssOption getStyles() {
         return styles;
     }
 
@@ -80,7 +81,7 @@ public class ComponentFile implements AngularFile {
         return providers;
     }
 
-    public TypeScript getTsCode() {
+    public TsBlock getTsCode() {
         return tsCode;
     }
 
@@ -94,7 +95,7 @@ public class ComponentFile implements AngularFile {
                 ", template=" + template +'\n'+
                 ", styles=" + styles +'\n'+
                 ", providers=" + providers +'\n'+
-                ", tsCode=" + (tsCode != null ? "<ts>" : "null") +'\n'+
+                ", tsCode=" + (tsCode != null ? tsCode.toString() : "null") +'\n'+
                 '}';
     }
 }

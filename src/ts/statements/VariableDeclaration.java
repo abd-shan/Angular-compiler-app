@@ -2,18 +2,19 @@ package ts.statements;
 
 
 import ts.expressions.TsExpression;
-import ts.types.Type;
 import ts.modifiers.Modifier;
+import ts.types.TsType;
+
 import java.util.List;
 
 public class VariableDeclaration implements TsStatement {
     private String variableName;
-    private Type type;
+    private TsType type;
     private TsExpression initialValue;
     private List<Modifier> modifiers;
     private boolean isConst;
 
-    public VariableDeclaration(String variableName, Type type, TsExpression initialValue,
+    public VariableDeclaration(String variableName, TsType type, TsExpression initialValue,
                                List<Modifier> modifiers, boolean isConst) {
         this.variableName = variableName;
         this.type = type;
@@ -55,7 +56,7 @@ public class VariableDeclaration implements TsStatement {
 
     // Getters and setters
     public String getVariableName() { return variableName; }
-    public Type getType() { return type; }
+    public TsType getType() { return type; }
     public TsExpression getInitialValue() { return initialValue; }
     public List<Modifier> getModifiers() { return modifiers; }
     public boolean isConst() { return isConst; }

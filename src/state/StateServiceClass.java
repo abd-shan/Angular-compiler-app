@@ -1,15 +1,16 @@
 package state;
 import ts.TypeScript;
+import ts.statements.TsBlock;
 
 import java.util.Objects;
 
 public class StateServiceClass {
     private final InjectableDecorator injectableDecorator; // maybe null
     private final String className;
-    private final String tsCode; // AST  TypeScript
+    private final TsBlock tsCode; // AST  TypeScript
     private final boolean isExported;
 
-    public StateServiceClass(InjectableDecorator injectableDecorator, String className, String tsCode, boolean isExported) {
+    public StateServiceClass(InjectableDecorator injectableDecorator, String className, TsBlock tsCode, boolean isExported) {
         this.injectableDecorator = injectableDecorator;
         this.className = Objects.requireNonNull(className);
         this.tsCode = tsCode;
@@ -24,7 +25,7 @@ public class StateServiceClass {
         return className;
     }
 
-    public String getTsCode() {
+    public TsBlock getTsCode() {
         return tsCode;
     }
 
@@ -34,7 +35,7 @@ public class StateServiceClass {
                 "injectableDecorator=" + injectableDecorator +"\n"+
                 ", className='" + className + '\'' +"\n"+
                 ", isExported='" + isExported + '\'' +"\n"+
-                ", tsCode=<ts>" +"\n"+
+                ", tsCode=" +"\n"+ tsCode.toString() +
                 '}';
     }
 }

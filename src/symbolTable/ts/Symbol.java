@@ -1,7 +1,5 @@
 package symbolTable.ts;
 
-import ts.types.Type;
-
 public class Symbol {
 //    String name;
 //    Kind kind;

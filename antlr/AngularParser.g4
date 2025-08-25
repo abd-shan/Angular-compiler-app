@@ -18,7 +18,7 @@ angularFile
   ;
 
 // ==================== state file ====================
-
+//done
 stateFile
   : importStatement*
     (stateInterface | stateVariable | stateAction | stateReducer | stateServiceClass)+
@@ -76,7 +76,7 @@ componentFile
     EXPORT CLASS ID (IMPLEMENTS ID)?
     LBRACE ts RBRACE
   ;
-
+//provider done
 providersOption
   : PROVIDERS COLON LBRACKET SPACE* providerList SPACE* RBRACKET
   ;
@@ -99,6 +99,7 @@ htmlOption
   | TEMPLATE_URL COLON STRING                    #externalTemplate
   ;
 
+//done inport
 importStatement
   : IMPORT importClause FROM STRING SEMICOLON?
   ;
@@ -183,9 +184,10 @@ arrayValue
 objectValue
   : LBRACE (stateProperty (COMMA stateProperty)*)? RBRACE
   ;
+//-----------------------------
 
 constructor
-  : CONSTRUCTOR LPARENTHESIS constructorParams? RPARENTHESIS LBRACE tsStmt* RBRACE
+  : primitiveDataType? CONSTRUCTOR LPARENTHESIS constructorParams? RPARENTHESIS LBRACE tsStmt* RBRACE
   ;
 
 constructorParams
@@ -215,6 +217,8 @@ paramType
   | tsType
   ;
 
+
+//done type
 tsType:  genericOrBasicType (PIPE genericOrBasicType)*;
 
 genericOrBasicType

@@ -1,81 +1,76 @@
 package  ts.statements;
 
 import  ts.modifiers.Modifier;
-import  ts.types.Type;
-import java.util.List;
-import java.util.Map;
+import ts.types.TsType;
+
+import java.util.*;
 
 public class Method implements TsStatement {
-    private String methodName;
-    private List<Modifier> modifiers;
-    private Map<String, Type> parameters;
-    private Type returnType;
-    private List<TsStatement> body;
-    private boolean isVoid;
+    private final String name;
+    private final String primitiveDataType;
+    private final List<MethodParam> parameters;
+    private final TsType returnType;
+    private final TsBlock body;
 
-    public Method(String methodName, List<Modifier> modifiers, Map<String, Type> parameters,
-                  Type returnType, List<TsStatement> body, boolean isVoid) {
-        this.methodName = methodName;
-        this.modifiers = modifiers;
-        this.parameters = parameters;
+    public Method(String name, String primitiveDataType, List<MethodParam> parameters, TsType returnType, TsBlock body) {
+        this.name = Objects.requireNonNull(name, "Method name cannot be null");
+        this.primitiveDataType = primitiveDataType;
+        this.parameters = parameters != null ? new ArrayList<>(parameters) : new ArrayList<>();
         this.returnType = returnType;
         this.body = body;
-        this.isVoid = isVoid;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getPrimitiveDataType() {
+        return primitiveDataType;
+    }
+
+    public List<MethodParam> getParameters() {
+        return Collections.unmodifiableList(parameters);
+    }
+
+    public TsType getReturnType() {
+        return returnType;
+    }
+
+    public TsBlock getBody() {
+        return body;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        // modifiers
-        if (modifiers != null) {
-            for (Modifier modifier : modifiers) {
-                sb.append(modifier.toString()).append(" ");
-            }
+        if (primitiveDataType != null) {
+            sb.append(primitiveDataType).append(" ");
         }
 
-        // method name
-        sb.append(methodName).append("(");
+        sb.append(name).append("(");
 
-        // parameters
-        if (parameters != null && !parameters.isEmpty()) {
-            boolean first = true;
-            for (Map.Entry<String, Type> param : parameters.entrySet()) {
-                if (!first) {
-                    sb.append(", ");
-                }
-                sb.append(param.getKey()).append(": ").append(param.getValue().toString());
-                first = false;
+        for (int i = 0; i < parameters.size(); i++) {
+            if (i > 0) {
+                sb.append(", ");
             }
+            sb.append(parameters.get(i).toString());
         }
 
         sb.append(")");
 
-        // return type
         if (returnType != null) {
             sb.append(": ").append(returnType.toString());
-        } else if (isVoid) {
-            sb.append(": void");
         }
 
         sb.append(" {\n");
 
-        // body
         if (body != null) {
-            for (TsStatement statement : body) {
-                sb.append("  ").append(statement.toString()).append("\n");
-            }
+            sb.append(body.toString()).append("\n");
         }
 
         sb.append("}");
+
         return sb.toString();
     }
-
-    // Getters and setters
-    public String getMethodName() { return methodName; }
-    public List<Modifier> getModifiers() { return modifiers; }
-    public Map<String, Type> getParameters() { return parameters; }
-    public Type getReturnType() { return returnType; }
-    public List<TsStatement> getBody() { return body; }
-    public boolean isVoid() { return isVoid; }
 }

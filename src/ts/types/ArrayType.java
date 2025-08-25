@@ -1,18 +1,20 @@
 package ts.types;
 
-public class ArrayType extends TsType {
-    private final TsType elementType;
+import java.util.Objects;
 
-    public ArrayType(TsType elementType) {
-        this.elementType = elementType;
+public class ArrayType extends GenericOrBasicType {
+    private final GenericOrBasicType elementType;
+
+    public ArrayType(GenericOrBasicType elementType) {
+        this.elementType = Objects.requireNonNull(elementType);
     }
 
-    public TsType getElementType() {
+    public GenericOrBasicType getElementType() {
         return elementType;
     }
 
     @Override
     public String toString() {
-        return elementType + "[]";
+        return elementType.toString() + "[]";
     }
 }
