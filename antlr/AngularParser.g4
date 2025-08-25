@@ -69,7 +69,6 @@ componentFile
         SELECTOR COLON STRING COMMA
         (STANDALONE COLON (TRUE | FALSE) COMMA)?
         (IMPORTS COLON LBRACKET SPACE* componentList SPACE* RBRACKET COMMA)?
-
         (cssOption COMMA)?
         (htmlOption COMMA)?
         (providersOption COMMA?)?

@@ -1,17 +1,34 @@
 package visitors;
 
+import component.ProvideStoreExpression;
+import component.ProviderExpression;
+import component.ProvidersOption;
+import component.SimpleProvider;
+import css.ExternalStyle;
+import css.InlineStyles;
+import css.StylesOption;
 import css.Stylesheet;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
+import helper.ProviderList;
+import html.ExternalTemplate;
+import html.HtmlOption;
 import html.HtmlTemplate;
+import html.InlineTemplate;
+import importStatement.*;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import program.AngularApp;
 import program.AngularFile;
 import program.ComponentFile;
 import program.StateFile;
 import state.*;
 import ts.TypeScript;
+import ts.stateManagement.StateProperty;
+import ts.stateManagement.StateValue;
+import ts.stateManagement.ValueType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class AngularVisitor extends AngularParserBaseVisitor<Object> {
@@ -40,7 +57,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             return visitStateFile(ctx.stateFile()); // StateFile
         }
 
-        throw new RuntimeException("Unknown AngularFile type: " + ctx.getText());
+        return null;
     }
 
 
@@ -51,7 +68,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         // ==== import statements ====
 
         for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
-            String importStmt = (String) visitImportStatement(impCtx); //   String
+            String importStmt = String.valueOf(visitImportStatement(impCtx)); //   String
             stateFile.addImport(importStmt);
         }
 
@@ -88,47 +105,117 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
     @Override
     public Object visitStateServiceClass(AngularParser.StateServiceClassContext ctx) {
-        return super.visitStateServiceClass(ctx);
+        //  injectable decorator
+        InjectableDecorator injectableDecorator = null;
+        if (ctx.injectableDecorator() != null) {
+            injectableDecorator = (InjectableDecorator) visitInjectableDecorator(ctx.injectableDecorator());
+        }
+
+        String className = ctx.ID().getText();
+
+        String tsCode = ctx.ts().getText();
+
+        boolean isExported = ctx.EXPORT() != null;
+
+        return new StateServiceClass(injectableDecorator,className, tsCode, isExported );
     }
 
     @Override
     public Object visitInjectableDecorator(AngularParser.InjectableDecoratorContext ctx) {
-        return super.visitInjectableDecorator(ctx);
+        InjectableOptions options = null;
+        if (ctx.injectableOptions() != null) {
+            options = (InjectableOptions) visitInjectableOptions(ctx.injectableOptions());
+        }
+
+        return new InjectableDecorator(options);
     }
 
     @Override
     public Object visitInjectableOptions(AngularParser.InjectableOptionsContext ctx) {
-        return super.visitInjectableOptions(ctx);
+        String providedIn = ctx.STRING().getText();
+        return new InjectableOptions(providedIn);
     }
 
     @Override
     public Object visitStateInterface(AngularParser.StateInterfaceContext ctx) {
-        return super.visitStateInterface(ctx);
+        String interfaceName = ctx.ID().getText();
+        boolean isExported = ctx.EXPORT() != null;
+
+        StateInterface stateInterface = new StateInterface(interfaceName, isExported);
+
+
+        for (AngularParser.StateInterfacePropertyContext propCtx : ctx.stateInterfaceProperty()) {
+            StateInterfaceProperty property = (StateInterfaceProperty) visitStateInterfaceProperty(propCtx);
+            stateInterface.addProperty(property);
+        }
+
+        return stateInterface;
     }
 
     @Override
     public Object visitStateInterfaceProperty(AngularParser.StateInterfacePropertyContext ctx) {
-        return super.visitStateInterfaceProperty(ctx);
+        String propertyName = ctx.ID().getText();
+        String propertyType = ctx.tsType().getText();
+
+        return new StateInterfaceProperty(propertyName, propertyType);
     }
 
     @Override
     public Object visitStateVariable(AngularParser.StateVariableContext ctx) {
-        return super.visitStateVariable(ctx);
+        String variableName = ctx.ID(0).getText();
+        String variableType = ctx.ID(1).getText();
+        boolean isExported = ctx.EXPORT() != null;
+        boolean isConst = ctx.CONST() != null;
+        Object value = visitObjectValue(ctx.objectValue());
+
+        return new StateVariable(variableName, variableType, value, isExported, isConst);
     }
 
     @Override
     public Object visitStateAction(AngularParser.StateActionContext ctx) {
-        return super.visitStateAction(ctx);
+        String actionName = ctx.ID().getText();
+        boolean isExported = ctx.EXPORT() != null;
+        boolean isConst = ctx.CONST() != null;
+        String actionString = ctx.STRING().getText();
+
+        String expression = null;
+        if (ctx.tsExpr() != null) {
+            expression = ctx.tsExpr().getText();
+        }
+
+        return new StateAction(actionName, actionString, expression, isExported, isConst);
     }
 
     @Override
     public Object visitStateReducer(AngularParser.StateReducerContext ctx) {
-        return super.visitStateReducer(ctx);
+        String reducerName = ctx.ID(0).getText();
+        String initialState = ctx.ID(1).getText();
+        boolean isExported = ctx.EXPORT() != null;
+        boolean isConst = ctx.CONST() != null;
+
+        StateReducer reducer = new StateReducer(reducerName, initialState, isExported, isConst);
+
+        //  reducerOnList
+        ReducerOnList onList = (ReducerOnList) visitReducerOnList(ctx.reducerOnList());
+        for (ReducerOn on : onList.getOnList()) {
+            reducer.addOn(on);
+        }
+
+        return reducer;
     }
 
     @Override
     public Object visitReducerOnList(AngularParser.ReducerOnListContext ctx) {
-        return super.visitReducerOnList(ctx);
+        ReducerOnList onList = new ReducerOnList();
+
+        for (int i = 0; i < ctx.ID().size(); i++) {
+            String action = ctx.ID(i).getText();
+            String arrowFunction = ctx.arrowFunction(i).getText();
+
+            onList.addOn(new ReducerOn(action, arrowFunction));
+        }
+
+        return onList;
     }
 
     public ComponentFile visitComponentFile(AngularParser.ComponentFileContext ctx) {
@@ -153,87 +240,172 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
         HtmlTemplate template = null;
         Stylesheet styles = null;
+        // providers option
+        ProvidersOption providersOption = null;
+        if (ctx.providersOption() != null) {
+            providersOption = visitProvidersOption(ctx.providersOption());
+        }
 
 
         TypeScript tsCode = new TypeScript(); // placeholder
 
-        return new ComponentFile(className, selector, standalone, componentImports, template, styles, tsCode);
+        return new ComponentFile(className, selector, standalone, componentImports, template, styles,providersOption, tsCode);
     }
 
     @Override
-    public Object visitProvidersOption(AngularParser.ProvidersOptionContext ctx) {
-        return super.visitProvidersOption(ctx);
+    public ProvidersOption visitProvidersOption(AngularParser.ProvidersOptionContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        ProviderList providerList = (ProviderList) visitProviderList(ctx.providerList());
+        return new ProvidersOption(providerList.getProviders());
     }
 
     @Override
-    public Object visitProviderList(AngularParser.ProviderListContext ctx) {
-        return super.visitProviderList(ctx);
+    public ProviderList visitProviderList(AngularParser.ProviderListContext ctx) {
+        ProviderList providerList = new ProviderList();
+
+        if (ctx != null) {
+            for (AngularParser.ProviderExpressionContext exprCtx : ctx.providerExpression()) {
+                ProviderExpression provider = (ProviderExpression) visit(exprCtx);
+                if (provider != null) {
+                    providerList.addProvider(provider);
+                }
+            }
+        }
+
+        return providerList;
     }
 
     @Override
-    public Object visitProvideStoreExpression(AngularParser.ProvideStoreExpressionContext ctx) {
-        return super.visitProvideStoreExpression(ctx);
+    public ProviderExpression visitProvideStoreExpression(AngularParser.ProvideStoreExpressionContext ctx) {
+        String functionName = ctx.ID(0).getText();
+        String configKey = ctx.ID(1).getText();
+        String configValue = ctx.ID(2).getText();
+
+        return new ProvideStoreExpression(functionName, configKey, configValue);
     }
 
     @Override
-    public Object visitSimpleProvider(AngularParser.SimpleProviderContext ctx) {
-        return super.visitSimpleProvider(ctx);
+    public ProviderExpression visitSimpleProvider(AngularParser.SimpleProviderContext ctx) {
+        return new SimpleProvider(ctx.ID().getText());
     }
 
     @Override
-    public Object visitCssOption(AngularParser.CssOptionContext ctx) {
-        return super.visitCssOption(ctx);
+    public StylesOption visitCssOption(AngularParser.CssOptionContext ctx) {
+        if (ctx.STYLES() != null) {
+            // Inline styles
+            String cssContent = ctx.css() != null ? ctx.css().getText() : "";
+            return new InlineStyles(cssContent);
+        } else if (ctx.STYLES_URL() != null) {
+            // External styles
+            String stylesUrl = ctx.STRING().getText();
+            return new ExternalStyle(stylesUrl);
+        }
+
+        return null;
     }
 
     @Override
-    public Object visitInlineTemplate(AngularParser.InlineTemplateContext ctx) {
-        return super.visitInlineTemplate(ctx);
+    public HtmlOption visitInlineTemplate(AngularParser.InlineTemplateContext ctx) {
+        String htmlContent = ctx.html() != null ? ctx.html().getText() : "";
+        return new InlineTemplate(htmlContent);
     }
 
     @Override
-    public Object visitExternalTemplate(AngularParser.ExternalTemplateContext ctx) {
-        return super.visitExternalTemplate(ctx);
+    public HtmlOption visitExternalTemplate(AngularParser.ExternalTemplateContext ctx) {
+        return new ExternalTemplate(ctx.STRING().getText());
     }
 
     @Override
-    public Object visitImportStatement(AngularParser.ImportStatementContext ctx) {
-        return super.visitImportStatement(ctx);
+    public ImportStatement visitImportStatement(AngularParser.ImportStatementContext ctx) {
+        ImportClause clause = (ImportClause) visitImportClause(ctx.importClause());
+        String modulePath = ctx.STRING().getText();
+
+        return new ImportStatement(clause, modulePath);
     }
 
     @Override
-    public Object visitImportClause(AngularParser.ImportClauseContext ctx) {
-        return super.visitImportClause(ctx);
+    public ImportClause visitImportClause(AngularParser.ImportClauseContext ctx) {
+        if (ctx.defaultImport() != null) {
+            DefaultImport defaultImport = (DefaultImport) visitDefaultImport(ctx.defaultImport());
+
+            if (ctx.namespaceImport() != null) {
+                NamespaceImport namespaceImport = (NamespaceImport) visitNamespaceImport(ctx.namespaceImport());
+                return new DefaultImportClause(defaultImport.getImportName(), namespaceImport, null);
+            } else if (ctx.namedImports() != null) {
+                NamedImports namedImports = (NamedImports) visitNamedImports(ctx.namedImports());
+                return new DefaultImportClause(defaultImport.getImportName(), null, namedImports);
+            } else {
+                return new DefaultImportClause(defaultImport.getImportName(), null, null);
+            }
+        } else if (ctx.namespaceImport() != null) {
+            NamespaceImport namespaceImport = (NamespaceImport) visitNamespaceImport(ctx.namespaceImport());
+            return new NamespaceImportClause(namespaceImport);
+        } else if (ctx.namedImports() != null) {
+            NamedImports namedImports = (NamedImports) visitNamedImports(ctx.namedImports());
+            return new NamedImportsClause(namedImports);
+        }
+
+        return null;
     }
 
     @Override
-    public Object visitDefaultImport(AngularParser.DefaultImportContext ctx) {
-        return super.visitDefaultImport(ctx);
+    public DefaultImport visitDefaultImport(AngularParser.DefaultImportContext ctx) {
+        String importName = ctx.getText();
+        return new DefaultImport(importName);
     }
 
     @Override
-    public Object visitNamespaceImport(AngularParser.NamespaceImportContext ctx) {
-        return super.visitNamespaceImport(ctx);
+    public NamespaceImport visitNamespaceImport(AngularParser.NamespaceImportContext ctx) {
+        String namespaceName = ctx.ID().getText();
+        return new NamespaceImport(namespaceName);
     }
 
     @Override
-    public Object visitNamedImports(AngularParser.NamedImportsContext ctx) {
-        return super.visitNamedImports(ctx);
+    public NamedImports visitNamedImports(AngularParser.NamedImportsContext ctx) {
+        if (ctx.importSpecList() != null) {
+            return (NamedImports) visitImportSpecList(ctx.importSpecList());
+        }
+        return new NamedImports(new ArrayList<>());
     }
 
     @Override
-    public Object visitImportSpecList(AngularParser.ImportSpecListContext ctx) {
-        return super.visitImportSpecList(ctx);
+    public NamedImports visitImportSpecList(AngularParser.ImportSpecListContext ctx) {
+        List<ImportSpecifier> specifiers = new ArrayList<>();
+
+        for (AngularParser.ImportSpecifierContext specCtx : ctx.importSpecifier()) {
+            ImportSpecifier specifier = (ImportSpecifier) visitImportSpecifier(specCtx);
+            specifiers.add(specifier);
+        }
+
+        return new NamedImports(specifiers);
     }
 
     @Override
-    public Object visitImportSpecifier(AngularParser.ImportSpecifierContext ctx) {
-        return super.visitImportSpecifier(ctx);
+    public ImportSpecifier visitImportSpecifier(AngularParser.ImportSpecifierContext ctx) {
+        String imported = visitDefaultImport(ctx.defaultImport(0)).getImportName();
+        String alias = null;
+
+        if (ctx.AS() != null && ctx.defaultImport().size() > 1) {
+            alias = visitDefaultImport(ctx.defaultImport(1)).getImportName();
+        }
+
+        return new ImportSpecifier(imported, alias);
     }
 
     @Override
-    public Object visitComponentList(AngularParser.ComponentListContext ctx) {
-        return super.visitComponentList(ctx);
+    public List<String> visitComponentList(AngularParser.ComponentListContext ctx) {
+        List<String> components = new ArrayList<>();
+
+        for (TerminalNode idNode : ctx.ID()) {
+            components.add(idNode.getText());
+        }
+
+        return components;
     }
+
 
     @Override
     public Object visitTs(AngularParser.TsContext ctx) {
@@ -255,31 +427,61 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return super.visitDeclareAndAssignAttribute(ctx);
     }
 
-    @Override
-    public Object visitStateDecl(AngularParser.StateDeclContext ctx) {
-        return super.visitStateDecl(ctx);
-    }
+    /**
+     * ObjectStateValue - يمثل قيمة كائن تحتوي على خصائص أخرى
+     */
+    public class ObjectStateValue implements StateValue {
+        private final List<StateProperty> properties;
 
-    @Override
-    public Object visitStateProperty(AngularParser.StatePropertyContext ctx) {
-        return super.visitStateProperty(ctx);
-    }
+        public ObjectStateValue(List<StateProperty> properties) {
+            this.properties = properties != null ? new ArrayList<>(properties) : new ArrayList<>();
+        }
 
-    @Override
-    public Object visitStateValue(AngularParser.StateValueContext ctx) {
-        return super.visitStateValue(ctx);
-    }
+        @Override
+        public ValueType getType() {
+            return ValueType.OBJECT;
+        }
 
-    @Override
-    public Object visitArrayValue(AngularParser.ArrayValueContext ctx) {
-        return super.visitArrayValue(ctx);
-    }
+        public List<StateProperty> getProperties() {
+            return Collections.unmodifiableList(properties);
+        }
 
-    @Override
-    public Object visitObjectValue(AngularParser.ObjectValueContext ctx) {
-        return super.visitObjectValue(ctx);
-    }
+        public void addProperty(StateProperty property) {
+            if (property != null) {
+                properties.add(property);
+            }
+        }
 
+        public StateProperty getProperty(String name) {
+            return properties.stream()
+                    .filter(p -> p.getName().equals(name))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder("{");
+            for (int i = 0; i < properties.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(properties.get(i).toString());
+            }
+            sb.append("}");
+            return sb.toString();
+        }
+
+        @Override
+        public String toCodeString() {
+            StringBuilder sb = new StringBuilder("{");
+            for (int i = 0; i < properties.size(); i++) {
+                if (i > 0) sb.append(", ");
+                StateProperty prop = properties.get(i);
+                sb.append(prop.getName()).append(": ").append(prop.getValue().toCodeString());
+            }
+            sb.append("}");
+            return sb.toString();
+        }
+    }
     @Override
     public Object visitConstructor(AngularParser.ConstructorContext ctx) {
         return super.visitConstructor(ctx);

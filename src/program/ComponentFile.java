@@ -1,5 +1,6 @@
 package program;
 
+import component.ProvidersOption;
 import css.Stylesheet;
 import html.HtmlTemplate;
 import ts.TypeScript;
@@ -27,6 +28,7 @@ public class ComponentFile implements AngularFile {
     private final List<String> componentImports; // imports: [A,B,...] inside @Component
     private final HtmlTemplate template;         // null if don't exist
     private final Stylesheet styles;             // null if don't exist
+    private final ProvidersOption providers;
     private final TypeScript tsCode;
 
     public ComponentFile(String className,
@@ -35,6 +37,7 @@ public class ComponentFile implements AngularFile {
                          List<String> componentImports,
                          HtmlTemplate template,
                          Stylesheet styles,
+                         ProvidersOption providers,
                          TypeScript tsCode) {
 
         this.className = Objects.requireNonNull(className, "className is null");
@@ -45,6 +48,7 @@ public class ComponentFile implements AngularFile {
                 : List.copyOf(componentImports);
         this.template = template; // maybe null
         this.styles = styles;     // maybe null
+        this.providers = providers;
         this.tsCode = Objects.requireNonNull(tsCode, "tsCode is null");
     }
 
@@ -72,6 +76,10 @@ public class ComponentFile implements AngularFile {
         return styles;
     }
 
+    public ProvidersOption getProviders() {
+        return providers;
+    }
+
     public TypeScript getTsCode() {
         return tsCode;
     }
@@ -85,6 +93,7 @@ public class ComponentFile implements AngularFile {
                 ", componentImports=" + componentImports +'\n'+
                 ", template=" + template +'\n'+
                 ", styles=" + styles +'\n'+
+                ", providers=" + providers +'\n'+
                 ", tsCode=" + (tsCode != null ? "<ts>" : "null") +'\n'+
                 '}';
     }

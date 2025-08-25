@@ -6,18 +6,18 @@ import java.util.Objects;
 
 public class StateInterfaceProperty {
     private final String name;
-    private final TsType type;
+    private final String type;
 
-    public StateInterfaceProperty(String name, TsType type) {
+    public StateInterfaceProperty(String name, String type) {
         this.name = Objects.requireNonNull(name);
-        this.type = Objects.requireNonNull(type);
+        this.type = type;
     }
 
     public String getName() {
         return name;
     }
 
-    public TsType getType() {
+    public String getType() {
         return type;
     }
 

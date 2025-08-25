@@ -3,13 +3,13 @@ package html;
 import java.util.List;
 
 public class InlineTemplate implements HtmlOption {
-    private final List<HtmlNode> nodes;
+    private final String nodes;
 
-    public InlineTemplate(List<HtmlNode> nodes) {
+    public InlineTemplate(String nodes) {
         this.nodes = nodes;
     }
 
-    public List<HtmlNode> getNodes() {
+    public String getNodes() {
         return nodes;
     }
 }

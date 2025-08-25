@@ -7,18 +7,18 @@ import java.util.Objects;
 
 public class ReducerOn {
     private final String actionName;
-    private final ArrowFunction handler;
+    private final String handler;
 
-    public ReducerOn(String actionName, ArrowFunction handler) {
+    public ReducerOn(String actionName, String handler) {
         this.actionName = Objects.requireNonNull(actionName);
-        this.handler = Objects.requireNonNull(handler);
+        this.handler =  handler;
     }
 
     public String getActionName() {
         return actionName;
     }
 
-    public ArrowFunction getHandler() {
+    public String getHandler() {
         return handler;
     }
 

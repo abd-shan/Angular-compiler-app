@@ -4,13 +4,13 @@ import java.util.Objects;
 
 /**  AST CSS  */
 public class InlineStyles implements StylesOption {
-    private final Css css;
+    private final String css;
 
-    public InlineStyles(Css css) {
-        this.css = Objects.requireNonNull(css, "css is null");
+    public InlineStyles(String css) {
+        this.css = css!=null? css:"css is null";
     }
 
-    public Css getCss() {
+    public String getCss() {
         return css;
     }
 
