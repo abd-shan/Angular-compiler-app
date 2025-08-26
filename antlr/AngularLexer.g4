@@ -21,6 +21,7 @@ SELECTOR:'selector';
 STYLES_URL:'styleUrl';
 PROVIDERS: 'providers';
 IMPLEMENTS:'implements';
+OF:'of';
 
 
 

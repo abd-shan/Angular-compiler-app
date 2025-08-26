@@ -12,10 +12,11 @@ import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
 import helper.ProviderList;
 import helper.TsStatementBlock;
-import html.ExternalTemplate;
-import html.HtmlOption;
-import html.HtmlTemplate;
-import html.InlineTemplate;
+import html.*;
+import html.attribute.*;
+import html.element.ElementNode;
+import html.element.InterpolationNode;
+import html.element.TextNode;
 import importStatement.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import program.AngularApp;
@@ -220,38 +221,80 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return onList;
     }
 
+    @Override
     public ComponentFile visitComponentFile(AngularParser.ComponentFileContext ctx) {
-        //  selector
-        String selector = ctx.STRING().getText().replace("\"", "").replace("'", "");
+        if (ctx == null) {
+            return new ComponentFile("", "", false, new ArrayList<>(),
+                    new HtmlDocument(), null, null, new TsBlock(new ArrayList<>()));
+        }
 
+        // selector
+        String selector = "";
+        if (ctx.STRING() != null) {
+            selector = ctx.STRING().getText().replace("\"", "").replace("'", "");
+        }
 
         boolean standalone = false;
         if (ctx.STANDALONE() != null) {
             standalone = ctx.TRUE() != null;
         }
 
-
         List<String> componentImports = new ArrayList<>();
         if (ctx.componentList() != null) {
-            ctx.componentList().ID().forEach(id -> componentImports.add(id.getText()));
+            for (TerminalNode idNode : ctx.componentList().ID()) {
+                componentImports.add(idNode.getText());
+            }
         }
 
+        String className = "";
+        if (!ctx.ID().isEmpty()) {
+            className = ctx.ID(0).getText();
+        }
 
-        String className = ctx.ID(0).getText();
-
-
-        HtmlTemplate template = null;
+        HtmlDocument template = new HtmlDocument();
         CssOption styles = null;
+
         // providers option
         ProvidersOption providersOption = null;
         if (ctx.providersOption() != null) {
             providersOption = visitProvidersOption(ctx.providersOption());
         }
 
+        TsBlock tsBlock = new TsBlock(new ArrayList<>());
+        if (ctx.ts() != null) {
+            tsBlock = visitTs(ctx.ts());
+        }
 
-        TsBlock tsBlock = visitTs(ctx.ts());
+        // معالجة قالب HTML إذا كان موجوداً
+        if (ctx.htmlOption() != null) {
+            template = processHtmlOption(ctx.htmlOption());
+        }
 
-        return new ComponentFile(className, selector, standalone, componentImports, template, styles, providersOption, tsBlock);
+        return new ComponentFile(className, selector, standalone, componentImports,
+                template, styles, providersOption, tsBlock);
+    }
+
+    private HtmlDocument processHtmlOption(AngularParser.HtmlOptionContext ctx) {
+        if (ctx instanceof AngularParser.InlineTemplateContext) {
+            return visitInlineTemplate((AngularParser.InlineTemplateContext) ctx);
+        } else if (ctx instanceof AngularParser.ExternalTemplateContext) {
+            return visitExternalTemplate((AngularParser.ExternalTemplateContext) ctx);
+        }
+        return new HtmlDocument();
+    }
+
+    @Override
+    public HtmlDocument visitInlineTemplate(AngularParser.InlineTemplateContext ctx) {
+        if (ctx.html() != null) {
+            return (HtmlDocument) visitHtml(ctx.html());
+        }
+        return new HtmlDocument();
+    }
+
+    @Override
+    public HtmlDocument visitExternalTemplate(AngularParser.ExternalTemplateContext ctx) {
+        // للقوالب الخارجية، يمكنك إضافة منطق لتحميل الملف هنا
+        return new HtmlDocument();
     }
 
     @Override
@@ -309,16 +352,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return null;
     }
 
-    @Override
-    public HtmlOption visitInlineTemplate(AngularParser.InlineTemplateContext ctx) {
-        String htmlContent = ctx.html() != null ? ctx.html().getText() : "";
-        return new InlineTemplate(htmlContent);
-    }
-
-    @Override
-    public HtmlOption visitExternalTemplate(AngularParser.ExternalTemplateContext ctx) {
-        return new ExternalTemplate(ctx.STRING().getText());
-    }
 
     @Override
     public ImportStatement visitImportStatement(AngularParser.ImportStatementContext ctx) {
@@ -1294,47 +1327,163 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return null;
     }
 
+//=========================  HTML  =========================
 
     @Override
-    public Object visitHtml(AngularParser.HtmlContext ctx) {
-        return super.visitHtml(ctx);
+    public HtmlDocument visitHtml(AngularParser.HtmlContext ctx) {
+        List<Node> nodes = new ArrayList<>();
+        if (ctx.node() != null) {
+            for (AngularParser.NodeContext nodeCtx : ctx.node()) {
+                Node node = (Node) visitNode(nodeCtx);
+                if (node != null) {
+                    nodes.add(node);
+                }
+            }
+        }
+        return new HtmlDocument(nodes);
     }
 
     @Override
-    public Object visitNode(AngularParser.NodeContext ctx) {
-        return super.visitNode(ctx);
+    public Node visitNode(AngularParser.NodeContext ctx) {
+        if (ctx.element() != null) {
+            return (Node) visitElement(ctx.element());
+        } else if (ctx.interpolation() != null) {
+            return (Node) visitInterpolation(ctx.interpolation());
+        } else if (ctx.textNode() != null) {
+            return (Node) visitTextNode(ctx.textNode());
+        }
+        return null;
     }
 
     @Override
-    public Object visitInterpolation(AngularParser.InterpolationContext ctx) {
-        return super.visitInterpolation(ctx);
+    public InterpolationNode visitInterpolation(AngularParser.InterpolationContext ctx) {
+        if (ctx.ANGULAR_BINDING() == null) {
+            return new InterpolationNode("");
+        }
+
+        String content = ctx.ANGULAR_BINDING().getText()
+                .replaceAll("\\{\\{|\\}\\}", "")
+                .trim();
+        return new InterpolationNode(content);
     }
 
     @Override
-    public Object visitTextNode(AngularParser.TextNodeContext ctx) {
-        return super.visitTextNode(ctx);
+    public TextNode visitTextNode(AngularParser.TextNodeContext ctx) {
+        if (ctx == null) {
+            return new TextNode("");
+        }
+
+        StringBuilder text = new StringBuilder();
+
+        // معالجة جميع أنواع المحارف الممكنة
+        if (ctx.ID() != null) {
+            for (TerminalNode terminal : ctx.ID()) {
+                text.append(terminal.getText());
+            }
+        }
+
+        if (ctx.STRING() != null) {
+            for (TerminalNode terminal : ctx.STRING()) {
+                text.append(terminal.getText());
+            }
+        }
+
+        if (ctx.NUMERIC_VALUE() != null) {
+            for (TerminalNode terminal : ctx.NUMERIC_VALUE()) {
+                text.append(terminal.getText());
+            }
+        }
+
+        if (ctx.COLON() != null) {
+            for (TerminalNode terminal : ctx.COLON()) {
+                text.append(terminal.getText());
+            }
+        }
+
+        return new TextNode(text.toString());
     }
 
     @Override
-    public Object visitElement(AngularParser.ElementContext ctx) {
-        return super.visitElement(ctx);
+    public ElementNode visitElement(AngularParser.ElementContext ctx) {
+        if (ctx == null || ctx.ID().isEmpty()) {
+            return new ElementNode("div");
+        }
+
+        String tagName = ctx.ID(0).getText();
+        ElementNode element = new ElementNode(tagName);
+
+
+        if (ctx.htmlAttribute() != null) {
+            for (AngularParser.HtmlAttributeContext attrCtx : ctx.htmlAttribute()) {
+                HtmlAttribute attribute = (HtmlAttribute) visitHtmlAttribute(attrCtx);
+                if (attribute != null) {
+                    element.addAttribute(attribute);
+                }
+            }
+        }
+
+
+        if (ctx.node() != null) {
+            for (AngularParser.NodeContext nodeCtx : ctx.node()) {
+                Node node = (Node) visitNode(nodeCtx);
+                if (node != null) {
+                    element.addChild(node);
+                }
+            }
+        }
+
+        return element;
     }
 
     @Override
-    public Object visitHtmlAttribute(AngularParser.HtmlAttributeContext ctx) {
-        return super.visitHtmlAttribute(ctx);
+    public HtmlAttribute visitHtmlAttribute(AngularParser.HtmlAttributeContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+
+        try {
+            if (ctx.ngForDirective() != null) {
+                return (HtmlAttribute) visitNgForDirective(ctx.ngForDirective());
+            } else if (ctx.ngIfDirective() != null) {
+                return (HtmlAttribute) visitNgIfDirective(ctx.ngIfDirective());
+            } else if (ctx.ANGULAR_ATTRIBUTE_PROPERTY() != null) {
+                return parseAngularProperty(ctx.ANGULAR_ATTRIBUTE_PROPERTY().getText());
+            } else if (ctx.ANGULAR_ATTRIBUTE_EVENT() != null) {
+                return parseAngularEvent(ctx.ANGULAR_ATTRIBUTE_EVENT().getText());
+            } else if (ctx.ANGULAR_ATTRIBUTE_TWO_WAY() != null) {
+                return parseAngularTwoWay(ctx.ANGULAR_ATTRIBUTE_TWO_WAY().getText());
+            } else if (ctx.ATTRIBUTE() != null) {
+                return parseStandardAttribute(ctx.ATTRIBUTE().getText());
+            } else if (ctx.ID() != null) {
+                return new BooleanAttribute(ctx.ID().getText());
+            }
+        } catch (Exception e) {
+
+            System.err.println("Error processing attribute: " + e.getMessage());
+        }
+
+        return null;
     }
 
     @Override
-    public Object visitNgForDirective(AngularParser.NgForDirectiveContext ctx) {
-        return super.visitNgForDirective(ctx);
+    public NgForDirective visitNgForDirective(AngularParser.NgForDirectiveContext ctx) {
+        if (ctx == null || ctx.STRING() == null) {
+            return new NgForDirective("");
+        }
+
+        String expression = ctx.STRING().getText().replaceAll("['\"]", "");
+        return new NgForDirective(expression);
     }
 
     @Override
-    public Object visitNgIfDirective(AngularParser.NgIfDirectiveContext ctx) {
-        return super.visitNgIfDirective(ctx);
-    }
+    public NgIfDirective visitNgIfDirective(AngularParser.NgIfDirectiveContext ctx) {
+        if (ctx == null || ctx.STRING() == null) {
+            return new NgIfDirective("");
+        }
 
+        String expression = ctx.STRING().getText().replaceAll("['\"]", "");
+        return new NgIfDirective(expression);
+    }
     @Override
     public Object visitCss(AngularParser.CssContext ctx) {
         return super.visitCss(ctx);
@@ -1398,5 +1547,65 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return exprCtx != null ? (TsExpression) visit(exprCtx) : null;
     }
 
+
+    private AngularPropertyBinding parseAngularProperty(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return new AngularPropertyBinding("", "");
+        }
+
+        try {
+            String[] parts = text.split("=", 2);
+            String property = parts[0].replaceAll("[\\[\\]]", "");
+            String expression = parts.length > 1 ? parts[1].replaceAll("['\"]", "") : "";
+            return new AngularPropertyBinding(property, expression);
+        } catch (Exception e) {
+            return new AngularPropertyBinding("", "");
+        }
+    }
+
+    private AngularEventBinding parseAngularEvent(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return new AngularEventBinding("", "");
+        }
+
+        try {
+            String[] parts = text.split("=", 2);
+            String event = parts[0].replaceAll("[\\(\\)]", "");
+            String handler = parts.length > 1 ? parts[1].replaceAll("['\"]", "") : "";
+            return new AngularEventBinding(event, handler);
+        } catch (Exception e) {
+            return new AngularEventBinding("", "");
+        }
+    }
+
+    private AngularTwoWayBinding parseAngularTwoWay(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return new AngularTwoWayBinding("", "");
+        }
+
+        try {
+            String[] parts = text.split("=", 2);
+            String property = parts[0].replaceAll("[\\[\\(\\]\\)]", "");
+            String expression = parts.length > 1 ? parts[1].replaceAll("['\"]", "") : "";
+            return new AngularTwoWayBinding(property, expression);
+        } catch (Exception e) {
+            return new AngularTwoWayBinding("", "");
+        }
+    }
+
+    private StandardAttribute parseStandardAttribute(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return new StandardAttribute("", "");
+        }
+
+        try {
+            String[] parts = text.split("=", 2);
+            String name = parts[0];
+            String value = parts.length > 1 ? parts[1].replaceAll("['\"]", "") : "";
+            return new StandardAttribute(name, value);
+        } catch (Exception e) {
+            return new StandardAttribute("", "");
+        }
+    }
 
 }

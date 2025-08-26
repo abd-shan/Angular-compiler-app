@@ -2,6 +2,7 @@ package program;
 
 import component.ProvidersOption;
 import css.CssOption;
+import html.HtmlDocument;
 import html.HtmlTemplate;
 import ts.TypeScript;
 import ts.statements.TsBlock;
@@ -27,7 +28,7 @@ public class ComponentFile implements AngularFile {
     private final String selector;
     private final boolean standalone;
     private final List<String> componentImports; // imports: [A,B,...] inside @Component
-    private final HtmlTemplate template;         // null if don't exist
+    private final HtmlDocument template;         // null if don't exist
     private final CssOption styles;             // null if don't exist
     private final ProvidersOption providers;
     private final TsBlock tsCode;
@@ -36,7 +37,7 @@ public class ComponentFile implements AngularFile {
                          String selector,
                          boolean standalone,
                          List<String> componentImports,
-                         HtmlTemplate template,
+                         HtmlDocument template,
                          CssOption styles,
                          ProvidersOption providers,
                          TsBlock tsCode) {
@@ -69,7 +70,7 @@ public class ComponentFile implements AngularFile {
         return Collections.unmodifiableList(componentImports);
     }
 
-    public HtmlTemplate getTemplate() {
+    public HtmlDocument getTemplate() {
         return template;
     }
 
