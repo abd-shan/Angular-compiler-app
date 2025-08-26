@@ -102,7 +102,9 @@ ANGULAR_BINDING   : '{{' .*? '}}';          // {{ expr }}
 TAG_OPEN : '<';
 TAG_CLOSE : '>';
 TAG_OPEN_SELF : '</';
-TAG_CLOSE_SELF:'/>';
+INPUT:'input';
+IMG:'img';
+//TAG_CLOSE_SELF:'/>';
 NG_IF  : '*ngIf';
 NG_FOR : '*ngFor';
 

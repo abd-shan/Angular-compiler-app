@@ -16,6 +16,13 @@ public class ForStatement implements TsStatement {
 
     @Override
     public String toString() {
-        return "for (" + (initializer != null ? initializer : "") + ") " + body.toString();
+        StringBuilder sb = new StringBuilder();
+        sb.append("for (");
+        sb.append(initializer != null ? initializer : "");
+        sb.append(") {");
+        sb.append("\n");
+        sb.append(body.toString());
+        sb.append("}\n");
+        return sb.toString();
     }
 }

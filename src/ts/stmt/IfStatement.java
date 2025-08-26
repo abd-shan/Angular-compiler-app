@@ -17,6 +17,13 @@ public class IfStatement implements TsStatement {
 
     @Override
     public String toString() {
-        return "if (" + (condition != null ? condition.toString() : "") + ") " + body.toString();
+        StringBuilder sb = new StringBuilder();
+        sb.append("if (");
+        sb.append(condition != null ? condition.toString() : "");
+        sb.append(") {");
+        sb.append("\n");
+        sb.append(body.toString());
+        sb.append("}\n");
+        return sb.toString();
     }
 }

@@ -361,6 +361,19 @@ html
   ;
 
 
+element
+    :TAG_OPEN ( IMG | INPUT ) htmlAttribute* TAG_CLOSE                                     #TerminalElement
+    |TAG_OPEN ID htmlAttribute* TAG_CLOSE node* TAG_OPEN_SELF ID TAG_CLOSE     #NonTerminalElement
+  ;
+
+
+node
+  : element
+  | interpolation
+  | textNode
+  ;
+
+
 interpolation
   : ANGULAR_BINDING
   ;
@@ -370,15 +383,6 @@ textNode
   ;
 
 
-element  //المشكلة هنا مشكلة النصر الخارج عن العقدة
-  : TAG_OPEN ID htmlAttribute* (TAG_CLOSE (node* TAG_OPEN_SELF ID TAG_CLOSE)? | TAG_CLOSE_SELF)
-  ;
-
-node
-  : element
-  | interpolation
-  | textNode
-  ;
 
 htmlAttribute
   : ngForDirective                   // *ngFor="..."
@@ -409,7 +413,7 @@ css
   ;
 
 cssDeclaration
-  : CSS_SELECTOR+ (ID)? LBRACE (cssProperty (SEMICOLON cssProperty)*)? SEMICOLON? RBRACE
+  : CSS_SELECTOR+ (IMG|ID)? LBRACE (cssProperty (SEMICOLON cssProperty)*)? SEMICOLON? RBRACE
   ;
 
 cssProperty
@@ -463,7 +467,7 @@ cssValue
   ;
 
 cssToken
-  : ID
+  :ID
   | STRING
   | NUMERIC_VALUE
   | COLOR_VALUE

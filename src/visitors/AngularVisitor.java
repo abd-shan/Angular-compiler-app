@@ -139,7 +139,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     @Override
     public Object visitInjectableOptions(AngularParser.InjectableOptionsContext ctx) {
         String providedIn = ctx.STRING().getText();
-        return new InjectableOptions(providedIn);
+        return new InjectableOptions(unquote(providedIn));
     }
 
     @Override
@@ -182,7 +182,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         String actionName = ctx.ID().getText();
         boolean isExported = ctx.EXPORT() != null;
         boolean isConst = ctx.CONST() != null;
-        String actionString = ctx.STRING().getText();
+        String actionString = unquote(ctx.STRING().getText());
 
         String expression = null;
         if (ctx.tsExpr() != null) {
@@ -255,7 +255,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         }
 
         HtmlDocument template = new HtmlDocument();
-        String styles = ctx.cssOption().STYLES().getText();
+        String styles = ctx.cssOption().css().getText();
 
         // providers option
         ProvidersOption providersOption = null;
@@ -469,76 +469,25 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
         List<TsStatement> statements = new ArrayList<>();
 
-        //  tsAttribute before constructor
-        if (ctx.tsAttribute() != null) {
-            for (AngularParser.TsAttributeContext attrCtx : ctx.tsAttribute()) {
-                TsStatement statement = (TsStatement) visit(attrCtx);
-                if (statement != null) {
-                    statements.add(statement);
-                }
-            }
-        }
+        // Iterate children in source order to avoid duplicating before/after constructor lists
+        for (var child : ctx.children) {
+            TsStatement statement = null;
 
-        //   stateDecl before constructor
-        if (ctx.stateDecl() != null) {
-            for (AngularParser.StateDeclContext stateDeclCtx : ctx.stateDecl()) {
-                TsStatement statement = (TsStatement) visitStateDecl(stateDeclCtx);
-                if (statement != null) {
-                    statements.add(statement);
-                }
+            if (child instanceof AngularParser.TsAttributeContext attrCtx) {
+                statement = (TsStatement) visit(attrCtx);
+            } else if (child instanceof AngularParser.StateDeclContext stateDeclCtx) {
+                statement = (TsStatement) visitStateDecl(stateDeclCtx);
+            } else if (child instanceof AngularParser.MethodContext methodCtx) {
+                statement = (TsStatement) visitMethod(methodCtx);
+            } else if (child instanceof AngularParser.ConstructorContext ctorCtx) {
+                statement = (TsStatement) visitConstructor(ctorCtx);
             }
-        }
 
-        //   method before constructor
-        if (ctx.method() != null) {
-            for (AngularParser.MethodContext methodCtx : ctx.method()) {
-                TsStatement statement = (TsStatement) visitMethod(methodCtx);
-                if (statement != null) {
-                    statements.add(statement);
-                }
-            }
-        }
-
-        //  constructor
-        if (ctx.constructor() != null) {
-            TsStatement statement = (TsStatement) visitConstructor(ctx.constructor());
             if (statement != null) {
                 statements.add(statement);
             }
         }
 
-        //   tsAttribute after constructor
-
-        if (ctx.tsAttribute() != null) {
-            for (AngularParser.TsAttributeContext attrCtx : ctx.tsAttribute()) {
-                TsStatement statement = (TsStatement) visit(attrCtx);
-                if (statement != null) {
-                    statements.add(statement);
-                }
-            }
-        }
-
-        //   stateDecl after constructor
-        if (ctx.stateDecl() != null) {
-            for (AngularParser.StateDeclContext stateDeclCtx : ctx.stateDecl()) {
-                TsStatement statement = (TsStatement) visitStateDecl(stateDeclCtx);
-                if (statement != null) {
-                    statements.add(statement);
-                }
-            }
-        }
-
-        //   method after constructor
-        if (ctx.method() != null) {
-            for (AngularParser.MethodContext methodCtx : ctx.method()) {
-                TsStatement statement = (TsStatement) visitMethod(methodCtx);
-                if (statement != null) {
-                    statements.add(statement);
-                }
-            }
-        }
-
-        // result
         if (statements.isEmpty()) {
             return null;
         } else if (statements.size() == 1) {
@@ -1126,7 +1075,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
     @Override
     public TsAtom visitString(AngularParser.StringContext ctx) {
-        return new StringLiteral(ctx.STRING().getText());
+        return new StringLiteral(unquote(ctx.STRING().getText()));
     }
 
     @Override
@@ -1337,7 +1286,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         List<Node> nodes = new ArrayList<>();
         if (ctx.element() != null) {
             for (AngularParser.ElementContext elementCtx : ctx.element()) {
-                ElementNode element = visitElement(elementCtx); // استدعاء مباشر ل visitElement
+                Node element = (Node) visit(elementCtx);
                 if (element != null) {
                     nodes.add(element);
                 }
@@ -1349,25 +1298,66 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     @Override
     public Node visitNode(AngularParser.NodeContext ctx) {
         if (ctx.element() != null) {
-            return visitElement(ctx.element()); //  visitElement
+            return (Node) visit(ctx.element());
         } else if (ctx.interpolation() != null) {
-            return visitInterpolation(ctx.interpolation()); //  visitInterpolation
+            return visitInterpolation(ctx.interpolation());
         } else if (ctx.textNode() != null) {
             return visitTextNode(ctx.textNode());
         }
         return null;
     }
 
+
+
+//    @Override
+//    public ElementNode visitElement(AngularParser.ElementContext ctx) {
+//        if (ctx == null || ctx.ID().isEmpty()) {
+//            return new ElementNode("div");
+//        }
+//
+//        String tagName = ctx.ID(0).getText();
+//        ElementNode element = new ElementNode(tagName);
+//
+//        if (ctx.htmlAttribute() != null) {
+//            for (AngularParser.HtmlAttributeContext attrCtx : ctx.htmlAttribute()) {
+//                HtmlAttribute attribute = (HtmlAttribute) visitHtmlAttribute(attrCtx);
+//                if (attribute != null) {
+//                    element.addAttribute(attribute);
+//                }
+//            }
+//        }
+//
+//        // With the new grammar, self-closing token is not used. Derive by void element name.
+//        boolean isVoidByName = VOID_ELEMENTS.contains(tagName.toLowerCase());
+//        element.setSelfClosing(isVoidByName);
+//
+//        if (ctx.node() != null) {
+//            for (AngularParser.NodeContext nodeCtx : ctx.node()) {
+//                Node node = visitNode(nodeCtx);
+//                if (node != null) {
+//                    element.addChild(node);
+//                }
+//            }
+//        }
+//
+//        return element;
+//    }
+
+
     @Override
-    public ElementNode visitElement(AngularParser.ElementContext ctx) {
-        if (ctx == null || ctx.ID().isEmpty()) {
+    public Object visitTerminalElement(AngularParser.TerminalElementContext ctx) {
+        if (ctx == null) {
             return new ElementNode("div");
         }
-
-        String tagName = ctx.ID(0).getText();
+        String tagName;
+        if (ctx.IMG() != null) {
+            tagName = ctx.IMG().getText();
+        } else if (ctx.INPUT() != null) {
+            tagName = ctx.INPUT().getText();
+        } else {
+            tagName = "div";
+        }
         ElementNode element = new ElementNode(tagName);
-
-
         if (ctx.htmlAttribute() != null) {
             for (AngularParser.HtmlAttributeContext attrCtx : ctx.htmlAttribute()) {
                 HtmlAttribute attribute = (HtmlAttribute) visitHtmlAttribute(attrCtx);
@@ -1376,23 +1366,36 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
                 }
             }
         }
-
-
-        boolean isSelfClosingFromToken = ctx.TAG_CLOSE_SELF() != null;
         boolean isVoidByName = VOID_ELEMENTS.contains(tagName.toLowerCase());
-        boolean isSelfClosing = isSelfClosingFromToken || isVoidByName;
-        element.setSelfClosing(isSelfClosing);
+        element.setSelfClosing(isVoidByName);
+        return element;
+    }
 
-
-        if (ctx.node() != null) {
-            for (AngularParser.NodeContext nodeCtx : ctx.node()) {
-                Node node = visitNode(nodeCtx);
-                if (node != null) {
-                    element.addChild(node);
+    @Override
+    public Object visitNonTerminalElement(AngularParser.NonTerminalElementContext ctx) {
+        if (ctx == null || ctx.ID() == null || ctx.ID().isEmpty()) {
+            return new ElementNode("div");
+        }
+        String tagName = ctx.ID(0).getText();
+        ElementNode element = new ElementNode(tagName);
+        if (ctx.htmlAttribute() != null) {
+            for (AngularParser.HtmlAttributeContext attrCtx : ctx.htmlAttribute()) {
+                HtmlAttribute attribute = (HtmlAttribute) visitHtmlAttribute(attrCtx);
+                if (attribute != null) {
+                    element.addAttribute(attribute);
                 }
             }
         }
-
+        boolean isVoidByName = VOID_ELEMENTS.contains(tagName.toLowerCase());
+        element.setSelfClosing(isVoidByName);
+        if (ctx.node() != null) {
+            for (AngularParser.NodeContext nodeCtx : ctx.node()) {
+                Node child = visitNode(nodeCtx);
+                if (child != null) {
+                    element.addChild(child);
+                }
+            }
+        }
         return element;
     }
 
@@ -1618,5 +1621,14 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         }
     }
 
+    private String unquote(String text) {
+        if (text == null || text.length() < 2) return text;
+        char first = text.charAt(0);
+        char last = text.charAt(text.length() - 1);
+        if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+            return text.substring(1, text.length() - 1);
+        }
+        return text;
+    }
 
 }
