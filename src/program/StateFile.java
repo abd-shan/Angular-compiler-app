@@ -88,7 +88,7 @@ public class StateFile implements AngularFile {
         sb.append("Variables: ").append(variables).append("\n");
         sb.append("Actions: ").append(actions).append("\n");
         sb.append("Reducers: ").append(reducers).append("\n");
-        sb.append("Services: ").append(serviceClasses).append("\n");
+        sb.append("Services:{\n ").append(serviceClasses).append("}\n");
         return sb.toString();
     }
 }

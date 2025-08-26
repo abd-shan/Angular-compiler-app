@@ -2,8 +2,6 @@ package program;
 
 import component.ProvidersOption;
 import html.HtmlDocument;
-import html.HtmlTemplate;
-import ts.TypeScript;
 import ts.statements.TsBlock;
 
 import java.util.Collections;
@@ -92,10 +90,10 @@ public class ComponentFile implements AngularFile {
                 ", selector='" + selector + '\'' +'\n'+
                 ", standalone=" + standalone +'\n'+
                 ", componentImports=" + componentImports +'\n'+
-                ", template=" + template +'\n'+
-                ", styles=" + styles +'\n'+
-                ", providers=" + providers +'\n'+
-                ", tsCode=" + (tsCode != null ? tsCode.toString() : "null") +'\n'+
+                ", template{\n" + template +'\n'+"} \n"+
+                ", styles{\n" + styles +'\n'+"} \n"+
+                ", providers{\n" + providers +'\n'+"} \n"+
+                ", tsCode{\n" + (tsCode != null ? tsCode.toString() : "null") +'\n'+ "}\n"+
                 '}';
     }
 }

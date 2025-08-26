@@ -357,14 +357,9 @@ primitiveDataType:  (PUBLIC | PRIVATE | PROTECTED )  READONLY?;
 // ===== HTML Template =====
 
 html
-  : node+
+  : element+
   ;
 
-node
-  : element
-  | interpolation
-  | textNode
-  ;
 
 interpolation
   : ANGULAR_BINDING
@@ -375,10 +370,15 @@ textNode
   ;
 
 
-element
+element  //المشكلة هنا مشكلة النصر الخارج عن العقدة
   : TAG_OPEN ID htmlAttribute* (TAG_CLOSE (node* TAG_OPEN_SELF ID TAG_CLOSE)? | TAG_CLOSE_SELF)
   ;
 
+node
+  : element
+  | interpolation
+  | textNode
+  ;
 
 htmlAttribute
   : ngForDirective                   // *ngFor="..."

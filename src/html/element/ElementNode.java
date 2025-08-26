@@ -7,53 +7,45 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
+import html.Node;
+import html.attribute.HtmlAttribute;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+// ElementNode.java
 public class ElementNode extends Node {
     private String tagName;
     private List<HtmlAttribute> attributes;
     private List<Node> children;
+    private boolean selfClosing;
 
     public ElementNode(String tagName) {
         this.tagName = tagName;
         this.attributes = new ArrayList<>();
         this.children = new ArrayList<>();
+        this.selfClosing = false;
     }
 
-    public ElementNode(String tagName, List<HtmlAttribute> attributes, List<Node> children) {
-        this.tagName = tagName;
-        this.attributes = attributes != null ? attributes : new ArrayList<>();
-        this.children = children != null ? children : new ArrayList<>();
+    public void addAttribute(HtmlAttribute attr) {
+        attributes.add(attr);
     }
 
-    public String getTagName() {
-        return tagName;
+    public void addChild(Node child) {
+        children.add(child);
     }
 
-    public void addAttribute(HtmlAttribute attribute) {
-        if (attribute != null) {
-            attributes.add(attribute);
-        }
+    public void setSelfClosing(boolean selfClosing) {
+        this.selfClosing = selfClosing;
     }
-
-    public void addChild(Node node) {
-        if (node != null) {
-            children.add(node);
-        }
-    }
-
-    public List<HtmlAttribute> getAttributes() {
-        return attributes;
-    }
-
-    public List<Node> getChildren() {
-        return children;
-    }
-
-
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("<").append(tagName);
+        sb.append(" ").append("\n")
+          .append("<").append(tagName);
 
         if (!attributes.isEmpty()) {
             sb.append(" ");
@@ -62,16 +54,15 @@ public class ElementNode extends Node {
                     .collect(Collectors.joining(" ")));
         }
 
-        if (children.isEmpty()) {
+        if (selfClosing) {
             sb.append("/>");
         } else {
             sb.append(">");
-            sb.append(children.stream()
-                    .map(Node::toString)
-                    .collect(Collectors.joining("")));
-            sb.append("</").append(tagName).append(">");
+            for (Node child : children) {
+                sb.append(child.toString());
+            }
+            sb.append("</").append(tagName).append(">").append("\n").append(" ");
         }
-
         return sb.toString();
     }
 }
