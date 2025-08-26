@@ -7,7 +7,6 @@ import component.SimpleProvider;
 import css.ExternalStyle;
 import css.InlineStyles;
 import css.StylesOption;
-import css.CssOption;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
 import helper.ProviderList;
@@ -252,7 +251,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         }
 
         HtmlDocument template = new HtmlDocument();
-        CssOption styles = null;
+        String styles = ctx.cssOption().STYLES().getText();
 
         // providers option
         ProvidersOption providersOption = null;
@@ -983,8 +982,8 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
     @Override
     public TsExpression visitOrExpr(AngularParser.OrExprContext ctx) {
-        TsExpression left = (TsExpression) visit(ctx.tsExpr(0));
-        TsExpression right = (TsExpression) visit(ctx.tsExpr(1));
+        TsExpression left = (TsExpression) visit(ctx.tsExpr());
+        TsExpression right = (TsExpression) visit(ctx.tsExpr());
         return new BinaryExpression(left, "||", right);
     }
 
