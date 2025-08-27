@@ -4,7 +4,11 @@ public class SymbolTable {
     private Scope currentScope;
 
     public void enterScope(String name) {
-        currentScope = new Scope(name, currentScope);
+        Scope child = new Scope(name, currentScope);
+        if (currentScope != null) {
+            currentScope.addChild(child);
+        }
+        currentScope = child;
     }
 
     public void exitScope() {
@@ -23,5 +27,27 @@ public class SymbolTable {
 
     public Scope getCurrentScope() {
         return currentScope;
+    }
+
+    private void printScope(StringBuilder sb, Scope scope, int depth) {
+        if (scope == null) return;
+        sb.append("  ".repeat(Math.max(0, depth)))
+          .append(scope.toString())
+          .append('\n');
+        for (Scope child : scope.getChildren()) {
+            printScope(sb, child, depth + 1);
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        // Find root
+        Scope root = currentScope;
+        while (root != null && root.getParent() != null) {
+            root = root.getParent();
+        }
+        printScope(sb, root, 0);
+        return sb.toString();
     }
 }

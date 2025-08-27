@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Detail</title>
+  <style>
+    .product-detail { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .btn-back { background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 20px; }
+    .detail-card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; }
+    .detail-card img { width: 100%; max-width: 400px; border-radius: 8px; margin: 15px 0; }
+    .price { color: #28a745; font-size: 1.2em; margin: 20px 0; }
+    .btn-edit { background: #ffc107; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="product-detail">
+    <button class="btn-back" onclick="goBack()">Back to Products</button>
+    <div id="detailContainer"></div>
+  </div>
+  <script>
+    function getProducts() { return JSON.parse(localStorage.getItem("products")) || []; }
+    function getProduct(id) { return getProducts().find(p => p.id === id); }
+    function goBack() { window.location.href = "products.html"; }
+    function editProduct(id) { window.location.href = "add-edit-product.html?id=" + id; }
+    const params = new URLSearchParams(window.location.search);
+    const id = Number(params.get("id"));
+    const product = getProduct(id);
+    const container = document.getElementById("detailContainer");
+    if (product) {
+      container.innerHTML = `
+        <div class="detail-card">
+          <h2>${product.name}</h2>
+          <img src="${product.image}" alt="${product.name}">
+          <p>${product.description}</p>
+          <p class="price"><strong>Price: ${product.price} SAR</strong></p>
+          <button class="btn-edit" onclick="editProduct(${product.id})">Edit Product</button>
+        </div>`;
+    } else {
+      container.innerHTML = `<p>Product not found</p>`;
+    }
+  </script>
+</body>
+</html>

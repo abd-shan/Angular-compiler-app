@@ -38,18 +38,39 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import symbolTable.SymbolTable;
+import symbolTable.RouterSymbolTable;
+
 public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
+    private final SymbolTable tsSymbolTable = new SymbolTable();
+    private final SymbolTable templateSymbolTable = new SymbolTable();
+    private int templateBindingCounter = 0;
+    private final RouterSymbolTable routerSymbolTable = new RouterSymbolTable();
+
+    public SymbolTable getTsSymbolTable() {
+        return tsSymbolTable;
+    }
+
+    public SymbolTable getTemplateSymbolTable() { return templateSymbolTable; }
+
+    public RouterSymbolTable getRouterSymbolTable() { return routerSymbolTable; }
 
     @Override
     public AngularApp visitAngularApp(AngularParser.AngularAppContext ctx) {
         AngularApp app = new AngularApp();
+
+        // Global TS scope
+        tsSymbolTable.enterScope("<program>");
+        // Global Template scope root
+        templateSymbolTable.enterScope("<templates>");
 
         for (AngularParser.AngularFileContext fileCtx : ctx.angularFile()) {
             AngularFile file = visitAngularFile(fileCtx); //    ComponentFile or StateFile
             app.addFile(file);
         }
 
+        // keep program/template root scopes as current
         return app;
     }
 
@@ -66,10 +87,12 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return null;
     }
 
-
     @Override
     public StateFile visitStateFile(AngularParser.StateFileContext ctx) {
         StateFile stateFile = new StateFile();
+
+        // file scope
+        tsSymbolTable.enterScope("stateFile");
 
         // ==== import statements ====
 
@@ -83,31 +106,46 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         for (AngularParser.StateInterfaceContext ifaceCtx : ctx.stateInterface()) {
             StateInterface iface = (StateInterface) visitStateInterface(ifaceCtx);
             stateFile.addInterface(iface);
+            if (iface != null) {
+                tsSymbolTable.define(iface.getName(), "interface");
+            }
         }
 
         for (AngularParser.StateVariableContext varCtx : ctx.stateVariable()) {
             StateVariable var = (StateVariable) visitStateVariable(varCtx);
             stateFile.addVariable(var);
+            if (var != null) {
+                tsSymbolTable.define(var.getName(), "variable");
+            }
         }
 
         for (AngularParser.StateActionContext actionCtx : ctx.stateAction()) {
             StateAction action = (StateAction) visitStateAction(actionCtx);
             stateFile.addAction(action);
+            if (action != null) {
+                tsSymbolTable.define(action.getName(), "action");
+            }
         }
 
         for (AngularParser.StateReducerContext reducerCtx : ctx.stateReducer()) {
             StateReducer reducer = (StateReducer) visitStateReducer(reducerCtx);
             stateFile.addReducer(reducer);
+            if (reducer != null) {
+                tsSymbolTable.define(reducer.getName(), "reducer");
+            }
         }
 
         for (AngularParser.StateServiceClassContext svcCtx : ctx.stateServiceClass()) {
             StateServiceClass service = (StateServiceClass) visitStateServiceClass(svcCtx);
             stateFile.addServiceClass(service);
+            if (service != null) {
+                tsSymbolTable.define(service.getClassName(), "class");
+            }
         }
 
+        tsSymbolTable.exitScope();
         return stateFile;
     }
-
 
     @Override
     public Object visitStateServiceClass(AngularParser.StateServiceClassContext ctx) {
@@ -119,10 +157,14 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
         String className = ctx.ID().getText();
 
+        // class scope
+        tsSymbolTable.enterScope(className);
+
         TsBlock tsBlock = visitTs(ctx.ts());
 
         boolean isExported = ctx.EXPORT() != null;
 
+        tsSymbolTable.exitScope();
         return new StateServiceClass(injectableDecorator, className, tsBlock, isExported);
     }
 
@@ -149,10 +191,12 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
         StateInterface stateInterface = new StateInterface(interfaceName, isExported);
 
-
         for (AngularParser.StateInterfacePropertyContext propCtx : ctx.stateInterfaceProperty()) {
             StateInterfaceProperty property = (StateInterfaceProperty) visitStateInterfaceProperty(propCtx);
             stateInterface.addProperty(property);
+            if (property != null) {
+                tsSymbolTable.define(interfaceName + "." + property.getName(), "property");
+            }
         }
 
         return stateInterface;
@@ -211,20 +255,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitReducerOnList(AngularParser.ReducerOnListContext ctx) {
-        ReducerOnList onList = new ReducerOnList();
-
-        for (int i = 0; i < ctx.ID().size(); i++) {
-            String action = ctx.ID(i).getText();
-            String arrowFunction = ctx.arrowFunction(i).getText();
-
-            onList.addOn(new ReducerOn(action, arrowFunction));
-        }
-
-        return onList;
-    }
-
-    @Override
     public ComponentFile visitComponentFile(AngularParser.ComponentFileContext ctx) {
         if (ctx == null) {
             return new ComponentFile("", "", false, new ArrayList<>(),
@@ -263,16 +293,25 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             providersOption = visitProvidersOption(ctx.providersOption());
         }
 
+        // class scope for component
+        tsSymbolTable.enterScope(className);
+
         TsBlock tsBlock = new TsBlock(new ArrayList<>());
         if (ctx.ts() != null) {
             tsBlock = visitTs(ctx.ts());
         }
+
+        // template scope for this component
+        templateSymbolTable.enterScope(className);
+        templateBindingCounter = 0;
 
         // معالجة قالب HTML إذا كان موجوداً
         if (ctx.htmlOption() != null) {
             template = processHtmlOption(ctx.htmlOption());
         }
 
+        templateSymbolTable.exitScope();
+        tsSymbolTable.exitScope();
         return new ComponentFile(className, selector, standalone, componentImports,
                 template, styles, providersOption, tsBlock);
     }
@@ -355,7 +394,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return null;
     }
 
-
     @Override
     public ImportStatement visitImportStatement(AngularParser.ImportStatementContext ctx) {
         ImportClause clause = (ImportClause) visitImportClause(ctx.importClause());
@@ -403,21 +441,13 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
     @Override
     public NamedImports visitNamedImports(AngularParser.NamedImportsContext ctx) {
-        if (ctx.importSpecList() != null) {
-            return (NamedImports) visitImportSpecList(ctx.importSpecList());
-        }
-        return new NamedImports(new ArrayList<>());
-    }
-
-    @Override
-    public NamedImports visitImportSpecList(AngularParser.ImportSpecListContext ctx) {
         List<ImportSpecifier> specifiers = new ArrayList<>();
-
-        for (AngularParser.ImportSpecifierContext specCtx : ctx.importSpecifier()) {
-            ImportSpecifier specifier = (ImportSpecifier) visitImportSpecifier(specCtx);
-            specifiers.add(specifier);
+        if (ctx.importSpecList() != null) {
+            for (AngularParser.ImportSpecifierContext specCtx : ctx.importSpecList().importSpecifier()) {
+                ImportSpecifier spec = (ImportSpecifier) visitImportSpecifier(specCtx);
+                if (spec != null) specifiers.add(spec);
+            }
         }
-
         return new NamedImports(specifiers);
     }
 
@@ -425,11 +455,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     public ImportSpecifier visitImportSpecifier(AngularParser.ImportSpecifierContext ctx) {
         String imported = visitDefaultImport(ctx.defaultImport(0)).getImportName();
         String alias = null;
-
         if (ctx.AS() != null && ctx.defaultImport().size() > 1) {
             alias = visitDefaultImport(ctx.defaultImport(1)).getImportName();
         }
-
         return new ImportSpecifier(imported, alias);
     }
 
@@ -443,7 +471,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
         return components;
     }
-
 
     @Override
     public TsBlock visitTs(AngularParser.TsContext ctx) {
@@ -475,12 +502,23 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
             if (child instanceof AngularParser.TsAttributeContext attrCtx) {
                 statement = (TsStatement) visit(attrCtx);
+                if (statement instanceof DeclareAttribute da) {
+                    tsSymbolTable.define(da.getName(), "field");
+                } else if (statement instanceof DeclareAndAssignAttribute daa) {
+                    tsSymbolTable.define(daa.getName(), "field");
+                }
             } else if (child instanceof AngularParser.StateDeclContext stateDeclCtx) {
                 statement = (TsStatement) visitStateDecl(stateDeclCtx);
             } else if (child instanceof AngularParser.MethodContext methodCtx) {
                 statement = (TsStatement) visitMethod(methodCtx);
+                if (statement instanceof Method m) {
+                    tsSymbolTable.define(m.getName(), "method");
+                }
             } else if (child instanceof AngularParser.ConstructorContext ctorCtx) {
                 statement = (TsStatement) visitConstructor(ctorCtx);
+                if (statement instanceof Constructor) {
+                    tsSymbolTable.define("constructor", "constructor");
+                }
             }
 
             if (statement != null) {
@@ -525,7 +563,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
         return new DeclareAndAssignAttribute(name, primitiveDataType, type, isReadonly, expression);
     }
-
 
     @Override
     public StateDeclaration visitStateDecl(AngularParser.StateDeclContext ctx) {
@@ -622,7 +659,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return new ObjectStateValue(properties);
     }
 
-
     @Override
     public Constructor visitConstructor(AngularParser.ConstructorContext ctx) {
         if (ctx == null) {
@@ -663,6 +699,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             ConstructorParam param = (ConstructorParam) visitConstructorParam(paramCtx);
             if (param != null) {
                 parameters.add(param);
+                tsSymbolTable.define(param.getName(), "param");
             }
         }
 
@@ -694,6 +731,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         TsType returnType = null;
         TsBlock body = null;
 
+        // method scope
+        tsSymbolTable.enterScope(name);
+
         if (ctx.methodParams() != null) {
             parameters = (List<MethodParam>) visitMethodParams(ctx.methodParams());
         }
@@ -713,6 +753,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             body = new TsBlock(statements);
         }
 
+        tsSymbolTable.exitScope();
         return new Method(name, primitiveDataType, parameters, returnType, body);
     }
 
@@ -728,6 +769,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             MethodParam param = (MethodParam) visitMethodParam(paramCtx);
             if (param != null) {
                 parameters.add(param);
+                tsSymbolTable.define(param.getName(), "param");
             }
         }
 
@@ -853,7 +895,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return new BasicType(BasicType.Primitive.ANY); // Default fallback
     }
 
-
     // Statement visitor methods
 
     @Override
@@ -862,6 +903,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         String name = ctx.ID().getText();
         TsType type = ctx.tsType() != null ? (TsType) visitTsType(ctx.tsType()) : null;
 
+        tsSymbolTable.define(name, "variable");
         return new DeclareVariable(keyword, name, type);
     }
 
@@ -872,6 +914,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         TsType type = ctx.tsType() != null ? (TsType) visitTsType(ctx.tsType()) : null;
         TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
 
+        tsSymbolTable.define(name, "variable");
         return new DeclareAndAssign(keyword, name, type, expression);
     }
 
@@ -1363,6 +1406,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
                 HtmlAttribute attribute = (HtmlAttribute) visitHtmlAttribute(attrCtx);
                 if (attribute != null) {
                     element.addAttribute(attribute);
+                    recordTemplateAttribute(tagName, attribute);
                 }
             }
         }
@@ -1383,6 +1427,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
                 HtmlAttribute attribute = (HtmlAttribute) visitHtmlAttribute(attrCtx);
                 if (attribute != null) {
                     element.addAttribute(attribute);
+                    recordTemplateAttribute(tagName, attribute);
                 }
             }
         }
@@ -1421,6 +1466,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         String content = ctx.ANGULAR_BINDING().getText()
                 .replaceAll("\\{\\{|\\}\\}", "")
                 .trim();
+        // record interpolation
+        String name = "{{" + content + "}}#" + (++templateBindingCounter);
+        templateSymbolTable.define(name, "interpolation");
         return new InterpolationNode(content);
     }
 
@@ -1631,4 +1679,47 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         return text;
     }
 
+    private void recordTemplateAttribute(String tagName, HtmlAttribute attribute) {
+        if (attribute == null) return;
+        String name = null;
+        String type = null;
+        if (attribute instanceof AngularPropertyBinding apb) {
+            name = tagName + ".[" + apb.getProperty() + "]#" + (++templateBindingCounter);
+            type = apb.getExpression();
+        } else if (attribute instanceof AngularEventBinding aeb) {
+            name = tagName + ".(" + aeb.getEvent() + ")#" + (++templateBindingCounter);
+            type = aeb.getHandler();
+        } else if (attribute instanceof AngularTwoWayBinding atb) {
+            name = tagName + ".[[(" + atb.getProperty() + ")]]#" + (++templateBindingCounter);
+            type = atb.getExpression();
+        } else if (attribute instanceof NgIfAttribute nif) {
+            name = tagName + ".*ngIf#" + (++templateBindingCounter);
+            type = nif.toString();
+        } else if (attribute instanceof NgForAttribute nfor) {
+            name = tagName + ".*ngFor#" + (++templateBindingCounter);
+            type = nfor.toString();
+            // attempt to capture loop variable: let x of y
+            String expr = nfor.toString();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("let\\s+(\\w+)\\s+of\\s+(.+)").matcher(expr);
+            if (m.find()) {
+                String loopVar = m.group(1);
+                templateSymbolTable.define(loopVar, "ngForVar");
+            }
+        } else if (attribute instanceof StandardAttribute sa) {
+            name = tagName + "." + sa.getName() + "#" + (++templateBindingCounter);
+            type = sa.getValue();
+            if ("routerLink".equals(sa.getName())) {
+                String path = sa.getValue();
+                // Heuristic: component name likely equals outer component context; we will resolve later if needed
+                // Here, we place the path with unknown component; actual component resolution requires a route config
+                routerSymbolTable.addRoute(path, "(via routerLink in template)");
+            }
+        } else if (attribute instanceof BooleanAttribute ba) {
+            name = tagName + "." + ba.getName() + "#" + (++templateBindingCounter);
+            type = "boolean-attr";
+        }
+        if (name != null) {
+            templateSymbolTable.define(name, type != null ? type : "");
+        }
+    }
 }

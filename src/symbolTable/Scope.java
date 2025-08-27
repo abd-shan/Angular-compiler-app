@@ -6,6 +6,7 @@ public class Scope {
     private final String name;
     private final Scope parent;
     private final Map<String, Symbol> symbols = new HashMap<>();
+    private final List<Scope> children = new ArrayList<>();
 
     public Scope(String name, Scope parent) {
         this.name = name;
@@ -24,6 +25,14 @@ public class Scope {
     }
 
     public Scope getParent() { return parent; }
+
+    public String getName() { return name; }
+
+    public Map<String, Symbol> getSymbols() { return Collections.unmodifiableMap(symbols); }
+
+    public void addChild(Scope child) { if (child != null) children.add(child); }
+
+    public List<Scope> getChildren() { return Collections.unmodifiableList(children); }
 
     @Override
     public String toString() {
