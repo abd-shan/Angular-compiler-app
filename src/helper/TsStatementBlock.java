@@ -1,6 +1,6 @@
 package helper;
 
-import ts.statements.TsStatement;
+import ast.ts.statements.TsStatement;
 
 import java.util.ArrayList;
 import java.util.Collections;

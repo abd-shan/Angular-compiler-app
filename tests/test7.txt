@@ -234,7 +234,7 @@ import { ProductService } from '../product.service';
         <h2>Product List</h2>
 
         <div class="products-grid">
-          <div class="product-card" *ngFor="let product of products">
+          <div class="product-card" *ngFor="let product of products ">
             <img [src]="product.image" [alt]="product.name">
             <h3>{{ product.name }}</h3>
             <p class="description">{{ product.description }}</p>
@@ -515,6 +515,8 @@ import { ProductService } from '../product.service';
     </div>
   `,
 })
+
+
 export class AddEditProductComponent implements OnInit {
   product: any = {
     name: '',

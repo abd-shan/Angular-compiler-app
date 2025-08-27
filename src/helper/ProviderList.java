@@ -1,6 +1,6 @@
 package helper;
 
-import component.ProviderExpression;
+import ast.component.ProviderExpression;
 
 import java.util.ArrayList;
 import java.util.Collections;

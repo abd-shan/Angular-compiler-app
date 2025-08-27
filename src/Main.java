@@ -4,16 +4,17 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import program.AngularApp;
+import semantic.SemanticAnalyzer;
 import visitors.AngularVisitor;
 import java.io.IOException;
+import java.util.List;
 
 import static org.antlr.v4.runtime.CharStreams.fromFileName;
-
-import generator.HtmlGenerator;
 
 public class Main {
 
 	public static AngularVisitor visitor;
+
 	public static void main(String[] args) throws IOException {
 
 		String source = "tests/test7.txt";
@@ -23,36 +24,39 @@ public class Main {
 		AngularParser parser = new AngularParser(token);
 		ParseTree tree = parser.angularApp();
 
+		// build AST + symbol tables
 		visitor = new AngularVisitor();
 		AngularApp program = (AngularApp) visitor.visit(tree);
 
-//        if (visitor.errors.size() > 0) {
-//            System.out.println(visitor.errors);
-//
-//        }else {
-			System.out.println(program);
+		// print program (AST)
+		System.out.println(program);
 
-			System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< TS SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
-			System.out.println(visitor.getTsSymbolTable());
+		// get symbol tables from visitor
+		var tsTable = visitor.getTsSymbolTable();
+		var templateTable = visitor.getTemplateSymbolTable();
+		var routerTable = visitor.getRouterSymbolTable();
 
-			System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< TEMPLATE/BINDING SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
-			System.out.println(visitor.getTemplateSymbolTable());
+		// run semantic analyzer
+		SemanticAnalyzer analyzer = new SemanticAnalyzer(tsTable, templateTable);
+		analyzer.analyze();
 
-			System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< ROUTER SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
-			System.out.println(visitor.getRouterSymbolTable());
+		List<String> errors = analyzer.getErrors();
+		System.out.println("\n\n\n======================== SEMANTIC CHECK ========================\n\n\n");
+		if (errors.isEmpty()) {
+			System.out.println("No semantic errors found ^_^");
+		} else {
+			System.out.println("Semantic errors: 0_0");
+			for (String e : errors) System.out.println("- " + e);
+		}
 
+		// print symbol tables for debug
+		System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< TS SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
+		System.out.println(tsTable);
 
-//            System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
-//
-//            System.out.println(visitor.symbolTable);
-//
-//            System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< HTML SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
-//
-//            System.out.println(visitor.htmlSymbolTable);
-//
-//
-//            visitor.componentTable.printTable();
-//        }
+		System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< TEMPLATE/BINDING SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
+		System.out.println(templateTable);
+
+		System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< ROUTER SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
+		System.out.println(routerTable);
 	}
 }
-

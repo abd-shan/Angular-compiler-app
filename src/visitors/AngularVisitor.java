@@ -1,23 +1,23 @@
 package visitors;
 
-import component.ProvideStoreExpression;
-import component.ProviderExpression;
-import component.ProvidersOption;
-import component.SimpleProvider;
-import css.ExternalStyle;
-import css.InlineStyles;
-import css.StylesOption;
+import ast.component.ProvideStoreExpression;
+import ast.component.ProviderExpression;
+import ast.component.ProvidersOption;
+import ast.component.SimpleProvider;
+import ast.css.ExternalStyle;
+import ast.css.InlineStyles;
+import ast.css.StylesOption;
 import gen.AngularLexer;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
 import helper.ProviderList;
 import helper.TsStatementBlock;
-import html.*;
-import html.attribute.*;
-import html.element.ElementNode;
-import html.element.InterpolationNode;
-import html.element.TextNode;
-import importStatement.*;
+import ast.html.*;
+import ast.html.attribute.*;
+import ast.html.element.ElementNode;
+import ast.html.element.InterpolationNode;
+import ast.html.element.TextNode;
+import ast.importStatement.*;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -26,16 +26,14 @@ import program.AngularApp;
 import program.AngularFile;
 import program.ComponentFile;
 import program.StateFile;
-import state.*;
-import ts.TypeScript;
-import ts.expressions.*;
-import ts.stateManagement.*;
-import ts.statements.*;
-import ts.stmt.*;
-import ts.types.*;
+import ast.state.*;
+import ast.ts.expressions.*;
+import ast.ts.stateManagement.*;
+import ast.ts.statements.*;
+import ast.ts.stmt.*;
+import ast.ts.types.*;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import symbolTable.SymbolTable;
@@ -293,7 +291,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             providersOption = visitProvidersOption(ctx.providersOption());
         }
 
-        // class scope for component
+        // class scope for ast.component
         tsSymbolTable.enterScope(className);
 
         TsBlock tsBlock = new TsBlock(new ArrayList<>());
@@ -301,7 +299,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             tsBlock = visitTs(ctx.ts());
         }
 
-        // template scope for this component
+        // template scope for this ast.component
         templateSymbolTable.enterScope(className);
         templateBindingCounter = 0;
 
@@ -1657,7 +1655,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             AngularParser parser = new AngularParser(tokens);
 
-            // نستخدم rule الـ html مباشرة (تأكد أن اسم القاعدة صحيح في الـ parser)
+            // نستخدم rule الـ ast.html مباشرة (تأكد أن اسم القاعدة صحيح في الـ parser)
             AngularParser.HtmlContext htmlCtx = parser.html();
 
             // نعيد زيارة هذا السياق بواسطة نفس الـ visitor (this)
@@ -1710,8 +1708,8 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             type = sa.getValue();
             if ("routerLink".equals(sa.getName())) {
                 String path = sa.getValue();
-                // Heuristic: component name likely equals outer component context; we will resolve later if needed
-                // Here, we place the path with unknown component; actual component resolution requires a route config
+                // Heuristic: ast.component name likely equals outer ast.component context; we will resolve later if needed
+                // Here, we place the path with unknown ast.component; actual ast.component resolution requires a route config
                 routerSymbolTable.addRoute(path, "(via routerLink in template)");
             }
         } else if (attribute instanceof BooleanAttribute ba) {

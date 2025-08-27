@@ -1,10 +1,9 @@
 package program;
 
-import state.*;
+import ast.state.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 public class StateFile implements AngularFile {
     private final List<String> importStatements = new ArrayList<>();

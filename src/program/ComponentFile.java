@@ -1,15 +1,15 @@
 package program;
 
-import component.ProvidersOption;
-import html.HtmlDocument;
-import ts.statements.TsBlock;
+import ast.component.ProvidersOption;
+import ast.html.HtmlDocument;
+import ast.ts.statements.TsBlock;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 /**
- *one component
+ *one ast.component
  *  - selector
  *  - standalone?
  *  - imports (inside @Component)

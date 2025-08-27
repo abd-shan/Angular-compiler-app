@@ -38,7 +38,7 @@ QUESTION:'?';
 ARROW: '=>';
 
 // ===== State Management =====
-STATE: 'state';
+STATE: 'ast.state';
 AT_INJECTABLE: '@Injectable';
 PROVIDED_IN: 'providedIn';
 INTERFACE: 'interface';

@@ -1,2 +1,2 @@
 # angular-compiler
-turn angular into html
+turn angular into ast.html
