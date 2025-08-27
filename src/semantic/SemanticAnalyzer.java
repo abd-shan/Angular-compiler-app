@@ -22,7 +22,7 @@ public class SemanticAnalyzer {
         checkUndefinedMethodsInTemplates();
         checkUndefinedBaseIdentifiersInBindings();
         checkNgForCollections();
-        checkNgIfVariables();
+        checkMethodParameterVariables();
     }
 
     public List<String> getErrors() {
@@ -141,6 +141,27 @@ public class SemanticAnalyzer {
         return Set.of("ngIf", "ngFor", "let", "of", "true", "false", "null", "undefined").contains(word);
     }
 
+    // Extract method parameters from call expression
+    private List<String> extractMethodParameters(String callExpr) {
+        List<String> params = new ArrayList<>();
+        if (callExpr == null || !callExpr.contains("(")) return params;
+
+        int start = callExpr.indexOf('(');
+        int end = callExpr.lastIndexOf(')');
+        if (start == -1 || end == -1 || end <= start) return params;
+
+        String paramStr = callExpr.substring(start + 1, end).trim();
+        if (paramStr.isEmpty()) return params;
+
+        // Split parameters by comma, handling nested parentheses and quotes
+        String[] parts = paramStr.split(",(?=(?:[^'\"]*['\"][^'\"]*['\"])*[^'\"]*$)");
+        for (String part : parts) {
+            params.add(part.trim());
+        }
+        return params;
+    }
+
+
     private String extractCollectionFromNgFor(String expr) {
         if (expr == null) return null;
 
@@ -240,13 +261,14 @@ public class SemanticAnalyzer {
             }
         }
     }
-
-    private void checkNgIfVariables() {
+    // New method: Check if variables passed to methods are defined
+    private void checkMethodParameterVariables() {
         for (Scope tplCompScope : getTemplateComponentScopes()) {
             String componentName = tplCompScope.getName();
             Scope tsScope = getTsComponentScopeByName(componentName);
             if (tsScope == null) continue;
 
+            // Collect local ngFor variables
             Set<String> localVars = new HashSet<>();
             for (Symbol s : tplCompScope.getSymbols().values()) {
                 if (isTemplateLocalVar(s)) {
@@ -255,21 +277,30 @@ public class SemanticAnalyzer {
             }
 
             for (Symbol sym : tplCompScope.getSymbols().values()) {
-                if (!isNgIf(sym)) continue;
+                if (!isClickEvent(sym)) continue;
 
-                String expr = extractDirectiveExpression(sym);
-                if (expr == null || expr.isBlank()) continue;
+                String callExpr = Optional.ofNullable(extractRhsExpression(sym)).orElse(sym.getName());
+                String method = extractMethodName(callExpr);
+                if (method == null || method.isBlank()) continue;
 
-                String baseVar = extractVariableFromNgIfExpression(expr);
-                if (baseVar == null || localVars.contains(baseVar)) continue;
+                // Extract and check method parameters
+                List<String> params = extractMethodParameters(callExpr);
+                for (String param : params) {
+                    String base = extractBaseIdentifier(param);
+                    if (base == null || localVars.contains(base)) continue;
 
-                if (tsScope.resolve(baseVar) == null) {
-                    errors.add(formatError(componentName, sym,
-                            "Variable '" + baseVar + "' used in *ngIf is not defined in class."));
+                    if (tsScope.resolve(base) == null) {
+                        errors.add(formatError(componentName, sym,
+                                "Variable '" + base + "' passed to method '" + method + "' is not defined."));
+                    }
                 }
             }
         }
     }
+
+
+
+
 
     private String formatError(String componentName, Symbol sym, String msg) {
         return "[Component: " + componentName + "] " + msg + " (at: " + sym.getName() + ")";
