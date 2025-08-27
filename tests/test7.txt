@@ -234,7 +234,7 @@ import { ProductService } from '../product.service';
         <h2>Product List</h2>
 
         <div class="products-grid">
-          <div class="product-card" *ngFor="let product of products ">
+          <div class="product-card" *ngFor="let  ">
             <img [src]="product.image" [alt]="product.name">
             <h3>{{ product.name }}</h3>
             <p class="description">{{ product.description }}</p>
@@ -358,7 +358,7 @@ import { ProductService } from '../product.service';
       <div class="product-detail">
         <button class="btn-back" (click)="goBack()"> Back to Products</button>
 
-        <div class="detail-card" *ngIf="product">
+        <div class="detail-card" *ngIf="prodduct">
           <h2>{{ product.name }}</h2>
           <img [src]="product.image" [alt]="product.name">
           <p class="description">{{ product.description }}</p>

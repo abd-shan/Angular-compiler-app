@@ -1,4 +1,4 @@
-package program;
+package ast.program;
 
 public interface AngularFile {
 }

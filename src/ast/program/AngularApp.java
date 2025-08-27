@@ -1,4 +1,4 @@
-package program;
+package ast.program;
 
 import java.util.ArrayList;
 import java.util.Collections;

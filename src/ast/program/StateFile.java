@@ -1,4 +1,4 @@
-package program;
+package ast.program;
 
 import ast.state.*;
 import java.util.ArrayList;

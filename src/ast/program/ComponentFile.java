@@ -1,4 +1,4 @@
-package program;
+package ast.program;
 
 import ast.component.ProvidersOption;
 import ast.html.HtmlDocument;

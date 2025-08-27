@@ -22,10 +22,10 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import program.AngularApp;
-import program.AngularFile;
-import program.ComponentFile;
-import program.StateFile;
+import ast.program.AngularApp;
+import ast.program.AngularFile;
+import ast.program.ComponentFile;
+import ast.program.StateFile;
 import ast.state.*;
 import ast.ts.expressions.*;
 import ast.ts.stateManagement.*;
@@ -59,7 +59,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         AngularApp app = new AngularApp();
 
         // Global TS scope
-        tsSymbolTable.enterScope("<program>");
+        tsSymbolTable.enterScope("<ast.program>");
         // Global Template scope root
         templateSymbolTable.enterScope("<templates>");
 
@@ -68,7 +68,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
             app.addFile(file);
         }
 
-        // keep program/template root scopes as current
+        // keep ast.program/template root scopes as current
         return app;
     }
 

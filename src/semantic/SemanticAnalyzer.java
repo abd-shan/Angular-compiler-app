@@ -9,9 +9,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SemanticAnalyzer {
-
-    private final SymbolTable tsTable;        // TypeScript (classes/components/members)
-    private final SymbolTable templateTable;  // Template (bindings/events/etc.)
+    private final SymbolTable tsTable;
+    private final SymbolTable templateTable;
     private final List<String> errors = new ArrayList<>();
 
     public SemanticAnalyzer(SymbolTable tsTable, SymbolTable templateTable) {
@@ -21,15 +20,14 @@ public class SemanticAnalyzer {
 
     public void analyze() {
         checkUndefinedMethodsInTemplates();
-        checkUndefinedBaseIdentifiersInBindingsAndInterpolations();
+        checkUndefinedBaseIdentifiersInBindings();
         checkNgForCollections();
+        checkNgIfVariables();
     }
 
     public List<String> getErrors() {
         return Collections.unmodifiableList(errors);
     }
-
-    /* ======================== Helpers: Scope traversal ======================== */
 
     private Scope getRoot(SymbolTable table) {
         Scope cur = table.getCurrentScope();
@@ -64,16 +62,12 @@ public class SemanticAnalyzer {
         return findScopeByName(tsRoot, componentName);
     }
 
-    /* ======================== Helpers: Kind detection ======================== */
-
     private boolean isClickEvent(Symbol sym) {
-        String n = sym.getName();
-        return n != null && n.contains("(click)");
+        return sym.getName() != null && sym.getName().contains("(click)");
     }
 
     private boolean isNgModelBinding(Symbol sym) {
-        String n = sym.getName();
-        return n != null && n.contains("[(ngModel)]");
+        return sym.getName() != null && sym.getName().contains("[(ngModel)]");
     }
 
     private boolean isPropertyBinding(Symbol sym) {
@@ -81,33 +75,21 @@ public class SemanticAnalyzer {
         return n != null && n.matches(".*\\.\\[[^\\]]+\\]#\\d+.*");
     }
 
-    private boolean isRouterLink(Symbol sym) {
-        String n = sym.getName();
-        return n != null && n.contains("routerLink");
-    }
-
-
-    private boolean isTemplateLocalVar(Symbol sym) {
-        String t = sym.getType();
-        return "ngForVar".equalsIgnoreCase(t);
-    }
-
     private boolean isInterpolation(Symbol sym) {
-        String n = sym.getName();
-        return n != null && n.contains("{{");
+        return sym.getName() != null && sym.getName().contains("{{");
     }
 
     private boolean isNgFor(Symbol sym) {
-        String n = sym.getName();
-        return n != null && n.contains("*ngFor");
+        return sym.getName() != null && sym.getName().contains("*ngFor");
     }
 
     private boolean isNgIf(Symbol sym) {
-        String n = sym.getName();
-        return n != null && n.contains("*ngIf");
+        return sym.getName() != null && sym.getName().contains("*ngIf");
     }
 
-    /* ======================== Helpers: Extract expressions ======================== */
+    private boolean isTemplateLocalVar(Symbol sym) {
+        return "ngForVar".equalsIgnoreCase(sym.getType());
+    }
 
     private String extractMethodName(String callExpr) {
         if (callExpr == null) return null;
@@ -122,45 +104,84 @@ public class SemanticAnalyzer {
     private String extractBaseIdentifier(String expr) {
         if (expr == null) return null;
         Matcher m = Pattern.compile("([A-Za-z_\\$][A-Za-z0-9_\\$]*)").matcher(expr);
-        if (m.find()) return m.group(1);
+        return (m.find()) ? m.group(1) : null;
+    }
+
+    // Improved directive expression extraction
+    private String extractDirectiveExpression(Symbol sym) {
+        if (sym.getName() == null) return null;
+
+        // Try to extract from the symbol name first
+        Matcher matcher = Pattern.compile("\\*ng(If|For)\\s*=\\s*[\"']([^\"']+)[\"']").matcher(sym.getName());
+        if (matcher.find()) {
+            return matcher.group(2);
+        }
+
+        // If not found in name, try the type (RHS expression)
+        String typeExpression = sym.getType();
+        if (typeExpression != null && !typeExpression.trim().isEmpty()) {
+            return typeExpression;
+        }
+
         return null;
     }
 
-    /* ======================== Checks ======================== */
+    private String extractVariableFromNgIfExpression(String expr) {
+        if (expr == null) return null;
+        String cleanedExpr = expr.replaceAll("[!&|()\\[\\]]", " ").trim();
+        Matcher m = Pattern.compile("([A-Za-z_\\$][A-Za-z0-9_\\$]*)").matcher(cleanedExpr);
+        if (m.find()) {
+            String variable = m.group(1);
+            if (!isReservedKeyword(variable)) return variable;
+        }
+        return null;
+    }
 
-    /** check undefine method in (click) */
+    private boolean isReservedKeyword(String word) {
+        return Set.of("ngIf", "ngFor", "let", "of", "true", "false", "null", "undefined").contains(word);
+    }
+
+    private String extractCollectionFromNgFor(String expr) {
+        if (expr == null) return null;
+
+        // More robust pattern to extract collection from ngFor expression
+        Pattern pattern = Pattern.compile("(?:let\\s+[a-zA-Z_$][\\w$]*\\s+)?of\\s+([a-zA-Z_$][\\w$]*)");
+        Matcher matcher = pattern.matcher(expr);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return null;
+    }
+
     private void checkUndefinedMethodsInTemplates() {
         for (Scope tplCompScope : getTemplateComponentScopes()) {
             String componentName = tplCompScope.getName();
-            Scope tsCompScope = getTsComponentScopeByName(componentName);
-            if (tsCompScope == null) continue;
+            Scope tsScope = getTsComponentScopeByName(componentName);
+            if (tsScope == null) continue;
 
             for (Symbol sym : tplCompScope.getSymbols().values()) {
                 if (!isClickEvent(sym)) continue;
 
-                String callExpr = extractRhsExpression(sym);
-                if (callExpr == null || callExpr.isBlank()) {
-                    callExpr = sym.getName();
-                }
-
+                String callExpr = Optional.ofNullable(extractRhsExpression(sym)).orElse(sym.getName());
                 String method = extractMethodName(callExpr);
                 if (method == null || method.isBlank()) continue;
 
-                if (tsCompScope.resolve(method) == null) {
-                    errors.add(err(componentName, sym,
+                if (tsScope.resolve(method) == null) {
+                    errors.add(formatError(componentName, sym,
                             "Undefined method '" + method + "' referenced in template event."));
                 }
             }
         }
     }
 
-    private void checkUndefinedBaseIdentifiersInBindingsAndInterpolations() {
+    private void checkUndefinedBaseIdentifiersInBindings() {
         for (Scope tplCompScope : getTemplateComponentScopes()) {
             String componentName = tplCompScope.getName();
-            Scope tsCompScope = getTsComponentScopeByName(componentName);
-            if (tsCompScope == null) continue;
+            Scope tsScope = getTsComponentScopeByName(componentName);
+            if (tsScope == null) continue;
 
-            // gather ngFor local vars
             Set<String> localVars = new HashSet<>();
             for (Symbol s : tplCompScope.getSymbols().values()) {
                 if (isTemplateLocalVar(s)) {
@@ -172,65 +193,85 @@ public class SemanticAnalyzer {
                 String rhs = null;
 
                 if (isNgModelBinding(sym) || isPropertyBinding(sym)) {
-                    rhs = extractRhsExpression(sym); //  product.name
+                    rhs = extractRhsExpression(sym);
                 } else if (isInterpolation(sym)) {
-                    // expression in {{}}
-                    String name = sym.getName();
-                    Matcher m = Pattern.compile("\\{\\{\\s*(.*?)\\s*\\}\\}").matcher(name);
-                    if (m.find()) {
-                        rhs = m.group(1); // product.price
-                    }
+                    Matcher m = Pattern.compile("\\{\\{\\s*(.*?)\\s*\\}\\}").matcher(sym.getName());
+                    if (m.find()) rhs = m.group(1);
                 }
 
                 if (rhs == null || rhs.isBlank()) continue;
 
-                String base = extractBaseIdentifier(rhs); // "product"
-                if (base == null) continue;
+                String base = extractBaseIdentifier(rhs);
+                if (base == null || localVars.contains(base)) continue;
 
-                // var ngFor
-                if (localVars.contains(base)) continue;
-
-                // if not found in TS
-                if (tsCompScope.resolve(base) == null) {
-                    errors.add(err(componentName, sym,
-                            "Undefined identifier '" + base + "' referenced in expression '" + rhs + "'."));
+                if (tsScope.resolve(base) == null) {
+                    errors.add(formatError(componentName, sym,
+                            "Undefined identifier '" + base + "' in expression '" + rhs + "'."));
                 }
             }
         }
     }
 
-
-    /** ngFor */
     private void checkNgForCollections() {
         for (Scope tplCompScope : getTemplateComponentScopes()) {
             String componentName = tplCompScope.getName();
-            Scope tsCompScope = getTsComponentScopeByName(componentName);
-            if (tsCompScope == null) continue;
+            Scope tsScope = getTsComponentScopeByName(componentName);
+            if (tsScope == null) continue;
 
             for (Symbol sym : tplCompScope.getSymbols().values()) {
                 if (!isNgFor(sym)) continue;
 
-                String expr = extractRhsExpression(sym); //  let product of products
-                if (expr == null) continue;
-
-                String[] parts = expr.split("of");
-                if (parts.length == 2) {
-                    String collection = parts[1].trim()
-                            .replaceAll("[\"']", "") // remove qout
-                            .split("\\s+")[0];       // first word
-                    if (tsCompScope.resolve(collection) == null) {
-                        errors.add(err(componentName, sym,
-                                "Undefined collection '" + collection + "' used in *ngFor."));
-                    }
+                String expr = extractDirectiveExpression(sym);
+                if (expr == null || expr.isBlank()) {
+                    errors.add(formatError(componentName, sym, "*ngFor directive is empty."));
+                    continue;
                 }
 
+                String collection = extractCollectionFromNgFor(expr);
+                if (collection == null) {
+                    errors.add(formatError(componentName, sym, "Invalid *ngFor expression: " + expr));
+                    continue;
+                }
+
+                if (tsScope.resolve(collection) == null) {
+                    errors.add(formatError(componentName, sym,
+                            "Undefined collection '" + collection + "' used in *ngFor."));
+                }
             }
         }
     }
 
+    private void checkNgIfVariables() {
+        for (Scope tplCompScope : getTemplateComponentScopes()) {
+            String componentName = tplCompScope.getName();
+            Scope tsScope = getTsComponentScopeByName(componentName);
+            if (tsScope == null) continue;
 
-    /* ======================== Error formatting ======================== */
-    private String err(String componentName, Symbol sym, String msg) {
+            Set<String> localVars = new HashSet<>();
+            for (Symbol s : tplCompScope.getSymbols().values()) {
+                if (isTemplateLocalVar(s)) {
+                    localVars.add(s.getName());
+                }
+            }
+
+            for (Symbol sym : tplCompScope.getSymbols().values()) {
+                if (!isNgIf(sym)) continue;
+
+                String expr = extractDirectiveExpression(sym);
+                if (expr == null || expr.isBlank()) continue;
+
+                String baseVar = extractVariableFromNgIfExpression(expr);
+                if (baseVar == null || localVars.contains(baseVar)) continue;
+
+                if (tsScope.resolve(baseVar) == null) {
+                    errors.add(formatError(componentName, sym,
+                            "Variable '" + baseVar + "' used in *ngIf is not defined in class."));
+                }
+            }
+        }
+    }
+
+    private String formatError(String componentName, Symbol sym, String msg) {
         return "[Component: " + componentName + "] " + msg + " (at: " + sym.getName() + ")";
     }
 }

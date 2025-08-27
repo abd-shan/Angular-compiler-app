@@ -3,7 +3,7 @@ import gen.AngularParser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import program.AngularApp;
+import ast.program.AngularApp;
 import semantic.SemanticAnalyzer;
 import visitors.AngularVisitor;
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class Main {
 		visitor = new AngularVisitor();
 		AngularApp program = (AngularApp) visitor.visit(tree);
 
-		// print program (AST)
+		// print ast.program (AST)
 		System.out.println(program);
 
 		// get symbol tables from visitor
