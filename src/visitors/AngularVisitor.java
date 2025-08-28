@@ -180,7 +180,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			StateInterface iface = (StateInterface) visitStateInterface(ifaceCtx);
 			stateFile.addInterface(iface);
 			if (iface != null) {
-				tsSymbolTable.define(iface.getName(), "interface");
+				int line = ifaceCtx.getStart().getLine();
+				int col = ifaceCtx.getStart().getCharPositionInLine();
+				tsSymbolTable.define(iface.getName(), "interface",line,col);
 			}
 		}
 
@@ -188,7 +190,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			StateVariable var = (StateVariable) visitStateVariable(varCtx);
 			stateFile.addVariable(var);
 			if (var != null) {
-				tsSymbolTable.define(var.getName(), "variable");
+				int line = varCtx.getStart().getLine();
+				int col = varCtx.getStart().getCharPositionInLine();
+				tsSymbolTable.define(var.getName(), "variable",line,col);
 			}
 		}
 
@@ -196,7 +200,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			StateAction action = (StateAction) visitStateAction(actionCtx);
 			stateFile.addAction(action);
 			if (action != null) {
-				tsSymbolTable.define(action.getName(), "action");
+				int line = actionCtx.getStart().getLine();
+				int col = actionCtx.getStart().getCharPositionInLine();
+				tsSymbolTable.define(action.getName(), "action",line,col);
 			}
 		}
 
@@ -204,7 +210,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			StateReducer reducer = (StateReducer) visitStateReducer(reducerCtx);
 			stateFile.addReducer(reducer);
 			if (reducer != null) {
-				tsSymbolTable.define(reducer.getName(), "reducer");
+				int line = reducerCtx.getStart().getLine();
+				int col = reducerCtx.getStart().getCharPositionInLine();
+				tsSymbolTable.define(reducer.getName(), "reducer",line,col);
 			}
 		}
 
@@ -212,7 +220,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			StateServiceClass service = (StateServiceClass) visitStateServiceClass(svcCtx);
 			stateFile.addServiceClass(service);
 			if (service != null) {
-				tsSymbolTable.define(service.getClassName(), "class");
+				int line = svcCtx.getStart().getLine();
+				int col = svcCtx.getStart().getCharPositionInLine();
+				tsSymbolTable.define(service.getClassName(), "class",line,col);
 			}
 		}
 
@@ -268,7 +278,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			StateInterfaceProperty property = (StateInterfaceProperty) visitStateInterfaceProperty(propCtx);
 			stateInterface.addProperty(property);
 			if (property != null) {
-				tsSymbolTable.define(interfaceName + "." + property.getName(), "property");
+				int line = propCtx.getStart().getLine();
+				int col = propCtx.getStart().getCharPositionInLine();
+				tsSymbolTable.define(interfaceName + "." + property.getName(), "property",line,col);
 			}
 		}
 
@@ -569,25 +581,29 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		}
 
 		TsStatement statement = null;
+		int line= ctx.getStart().getLine();
+		int col = ctx.getStart().getCharPositionInLine();
 
 		if (ctx.tsAttribute() != null) {
 			statement = (TsStatement) visit(ctx.tsAttribute());
 			if (statement instanceof DeclareAttribute da) {
-				tsSymbolTable.define(da.getName(), "field");
+
+				tsSymbolTable.define(da.getName(), "field",line,col);
 			} else if (statement instanceof DeclareAndAssignAttribute daa) {
-				tsSymbolTable.define(daa.getName(), "field");
+				tsSymbolTable.define(daa.getName(), "field",line,col);
 			}
 		} else if (ctx.stateDecl() != null) {
 			statement = (TsStatement) visitStateDecl(ctx.stateDecl());
 		} else if (ctx.method() != null) {
 			statement = (TsStatement) visitMethod(ctx.method());
 			if (statement instanceof Method m) {
-				tsSymbolTable.define(m.getName(), "method");
+
+				tsSymbolTable.define(m.getName(), "method",line,col);
 			}
 		} else if (ctx.constructor() != null) {
 			statement = (TsStatement) visitConstructor(ctx.constructor());
 			if (statement instanceof Constructor) {
-				tsSymbolTable.define("constructor", "constructor");
+				tsSymbolTable.define("constructor", "constructor",line,col);
 			}
 		}
 
@@ -756,9 +772,12 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 		for (AngularParser.ConstructorParamContext paramCtx : ctx.constructorParam()) {
 			ConstructorParam param = (ConstructorParam) visitConstructorParam(paramCtx);
+			int line= paramCtx.getStart().getLine();
+			int col = paramCtx.getStart().getCharPositionInLine();
 			if (param != null) {
+
 				parameters.add(param);
-				tsSymbolTable.define(param.getName(), "param");
+				tsSymbolTable.define(param.getName(), "param",line,col);
 			}
 		}
 
@@ -826,9 +845,11 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 		for (AngularParser.MethodParamContext paramCtx : ctx.methodParam()) {
 			MethodParam param = (MethodParam) visitMethodParam(paramCtx);
+			int line= paramCtx.getStart().getLine();
+			int col = paramCtx.getStart().getCharPositionInLine();
 			if (param != null) {
 				parameters.add(param);
-				tsSymbolTable.define(param.getName(), "param");
+				tsSymbolTable.define(param.getName(), "param",line,col);
 			}
 		}
 
@@ -962,10 +983,15 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		String name = ctx.ID().getText();
 		TsType type = ctx.tsType() != null ? (TsType) visitTsType(ctx.tsType()) : null;
 
-		tsSymbolTable.define(name, "variable");
+
+		int line = ctx.ID().getSymbol().getLine();
+		int column = ctx.ID().getSymbol().getCharPositionInLine();
+
+		tsSymbolTable.define(name, "variable", line, column);
 		return new DeclareVariable(keyword, name, type);
 	}
 
+	// In your visitor class
 	@Override
 	public TsStatement visitDeclareAndAssign(AngularParser.DeclareAndAssignContext ctx) {
 		String keyword = ctx.LET() != null ? "let" : "const";
@@ -973,7 +999,11 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		TsType type = ctx.tsType() != null ? (TsType) visitTsType(ctx.tsType()) : null;
 		TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
 
-		tsSymbolTable.define(name, "variable");
+		// Get line and column information
+		int line = ctx.ID().getSymbol().getLine();
+		int column = ctx.ID().getSymbol().getCharPositionInLine();
+
+		tsSymbolTable.define(name, "variable", line, column);
 		return new DeclareAndAssign(keyword, name, type, expression);
 	}
 
@@ -1453,6 +1483,10 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		if (ctx == null) {
 			return new ElementNode("div");
 		}
+
+		int line= ctx.getStart().getLine();
+		int col = ctx.getStart().getCharPositionInLine();
+
 		String tagName;
 		if (ctx.IMG() != null) {
 			tagName = ctx.IMG().getText();
@@ -1467,7 +1501,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 				HtmlAttribute attribute = (HtmlAttribute) visitHtmlAttribute(attrCtx);
 				if (attribute != null) {
 					element.addAttribute(attribute);
-					recordTemplateAttribute(tagName, attribute);
+					recordTemplateAttribute(tagName, attribute,line,col);
 				}
 			}
 		}
@@ -1481,6 +1515,10 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		if (ctx == null || ctx.ID() == null || ctx.ID().isEmpty()) {
 			return new ElementNode("div");
 		}
+
+		int line= ctx.getStart().getLine();
+		int col = ctx.getStart().getCharPositionInLine();
+
 		String tagName = ctx.ID(0).getText();
 		ElementNode element = new ElementNode(tagName);
 		if (ctx.htmlAttribute() != null) {
@@ -1488,7 +1526,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 				HtmlAttribute attribute = (HtmlAttribute) visitHtmlAttribute(attrCtx);
 				if (attribute != null) {
 					element.addAttribute(attribute);
-					recordTemplateAttribute(tagName, attribute);
+					recordTemplateAttribute(tagName, attribute,line,col);
 				}
 			}
 		}
@@ -1523,13 +1561,15 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 	public InterpolationNode visitInterpolation(AngularParser.InterpolationContext ctx) {
 		if (ctx == null) return new InterpolationNode("");
 		if (ctx.ANGULAR_BINDING() == null) return new InterpolationNode("");
+		int line= ctx.getStart().getLine();
+		int col = ctx.getStart().getCharPositionInLine();
 
 		String content = ctx.ANGULAR_BINDING().getText()
 				.replaceAll("\\{\\{|\\}\\}", "")
 				.trim();
 		// record interpolation
 		String name = "{{" + content + "}}#" + (++templateBindingCounter);
-		templateSymbolTable.define(name, "interpolation");
+		templateSymbolTable.define(name, "interpolation",line,col);
 		return new InterpolationNode(content);
 	}
 
@@ -1740,7 +1780,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		return text;
 	}
 
-	private void recordTemplateAttribute(String tagName, HtmlAttribute attribute) {
+	private void recordTemplateAttribute(String tagName, HtmlAttribute attribute,int line, int col) {
 		if (attribute == null) return;
 		String name = null;
 		String type = null;
@@ -1764,23 +1804,20 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			java.util.regex.Matcher m = java.util.regex.Pattern.compile("let\\s+(\\w+)\\s+of\\s+(.+)").matcher(expr);
 			if (m.find()) {
 				String loopVar = m.group(1);
-				templateSymbolTable.define(loopVar, "ngForVar");
+				templateSymbolTable.define(loopVar, "ngForVar",line,col);
 			}
 		} else if (attribute instanceof StandardAttribute sa) {
 			name = tagName + "." + sa.getName() + "#" + (++templateBindingCounter);
 			type = sa.getValue();
 			if ("routerLink".equals(sa.getName())) {
 				String path = sa.getValue();
-				// Heuristic: ast.component name likely equals outer ast.component context; we will resolve later if needed
-				// Here, we place the path with unknown ast.component; actual ast.component resolution requires a route config
-				routerSymbolTable.addRoute(path, "(via routerLink in template)");
 			}
 		} else if (attribute instanceof BooleanAttribute ba) {
 			name = tagName + "." + ba.getName() + "#" + (++templateBindingCounter);
 			type = "boolean-attr";
 		}
 		if (name != null) {
-			templateSymbolTable.define(name, type != null ? type : "");
+			templateSymbolTable.define(name, type != null ? type : "",line,col);
 		}
 	}
 }

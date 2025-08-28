@@ -19,15 +19,16 @@ public class SemanticAnalyzer {
     }
 
     public void analyze() {
+        // ✅ Angular template checks
         checkUndefinedMethodsInTemplates();
         checkUndefinedBaseIdentifiersInBindings();
         checkNgForCollections();
         checkNgIfVariables();
         checkMethodParameterVariables();
+
+        // ✅ TypeScript semantic checks
         checkUndefinedThisVariables();
         checkUndefinedVariablesInMethodCalls();
-
-
     }
 
     public List<String> getErrors() {
@@ -67,6 +68,7 @@ public class SemanticAnalyzer {
         return findScopeByName(tsRoot, componentName);
     }
 
+    // Angular template symbol type detection
     private boolean isClickEvent(Symbol sym) {
         return sym.getName() != null && sym.getName().contains("(click)");
     }
@@ -112,17 +114,15 @@ public class SemanticAnalyzer {
         return (m.find()) ? m.group(1) : null;
     }
 
-    // Improved directive expression extraction
+    // Extract ngIf/ngFor directive expression
     private String extractDirectiveExpression(Symbol sym) {
         if (sym.getName() == null) return null;
 
-        // Try to extract from the symbol name first
         Matcher matcher = Pattern.compile("\\*ng(If|For)\\s*=\\s*[\"']([^\"']+)[\"']").matcher(sym.getName());
         if (matcher.find()) {
             return matcher.group(2);
         }
 
-        // If not found in name, try the type (RHS expression)
         String typeExpression = sym.getType();
         if (typeExpression != null && !typeExpression.trim().isEmpty()) {
             return typeExpression;
@@ -163,7 +163,6 @@ public class SemanticAnalyzer {
         String paramStr = callExpr.substring(start + 1, end).trim();
         if (paramStr.isEmpty()) return params;
 
-        // Split parameters by comma, handling nested parentheses and quotes
         String[] parts = paramStr.split(",(?=(?:[^'\"]*['\"][^'\"]*['\"])*[^'\"]*$)");
         for (String part : parts) {
             params.add(part.trim());
@@ -171,11 +170,9 @@ public class SemanticAnalyzer {
         return params;
     }
 
-
     private String extractCollectionFromNgFor(String expr) {
         if (expr == null) return null;
 
-        // More robust pattern to extract collection from ngFor expression
         Pattern pattern = Pattern.compile("(?:let\\s+[a-zA-Z_$][\\w$]*\\s+)?of\\s+([a-zA-Z_$][\\w$]*)");
         Matcher matcher = pattern.matcher(expr);
 
@@ -186,6 +183,7 @@ public class SemanticAnalyzer {
         return null;
     }
 
+    // ---------------- TEMPLATE SEMANTIC CHECKS ----------------
     private void checkUndefinedMethodsInTemplates() {
         for (Scope tplCompScope : getTemplateComponentScopes()) {
             String componentName = tplCompScope.getName();
@@ -254,7 +252,6 @@ public class SemanticAnalyzer {
 
                 String expr = extractDirectiveExpression(sym);
 
-
                 if (expr == null || expr.isBlank()) {
                     errors.add(formatError(componentName, sym, "*ngIf directive is empty."));
                     continue;
@@ -269,11 +266,9 @@ public class SemanticAnalyzer {
                                 "Undefined variable '" + variable + "' used in *ngIf expression: " + expr));
                     }
                 }
-
             }
         }
     }
-
 
     private void checkNgForCollections() {
         for (Scope tplCompScope : getTemplateComponentScopes()) {
@@ -303,14 +298,13 @@ public class SemanticAnalyzer {
             }
         }
     }
-    // New method: Check if variables passed to methods are defined
+
     private void checkMethodParameterVariables() {
         for (Scope tplCompScope : getTemplateComponentScopes()) {
             String componentName = tplCompScope.getName();
             Scope tsScope = getTsComponentScopeByName(componentName);
             if (tsScope == null) continue;
 
-            // Collect local ngFor variables
             Set<String> localVars = new HashSet<>();
             for (Symbol s : tplCompScope.getSymbols().values()) {
                 if (isTemplateLocalVar(s)) {
@@ -325,7 +319,6 @@ public class SemanticAnalyzer {
                 String method = extractMethodName(callExpr);
                 if (method == null || method.isBlank()) continue;
 
-                // Extract and check method parameters
                 List<String> params = extractMethodParameters(callExpr);
                 for (String param : params) {
                     String base = extractBaseIdentifier(param);
@@ -340,7 +333,7 @@ public class SemanticAnalyzer {
         }
     }
 
-
+    // ---------------- TYPESCRIPT SEMANTIC CHECKS ----------------
     private void checkUndefinedThisVariables() {
         Scope root = getRoot(tsTable);
         if (root == null) return;
@@ -353,24 +346,25 @@ public class SemanticAnalyzer {
             q.addAll(scope.getChildren());
 
             for (Symbol sym : scope.getSymbols().values()) {
-                String name = sym.getName();
-                if (name == null) continue;
+                String raw = sym.getType() != null ? sym.getType() : sym.getName();
+                if (raw == null) continue;
 
-
-                Matcher m = Pattern.compile("\\bthis\\.([A-Za-z_\\$][A-Za-z0-9_\\$]*)").matcher(name);
+                Matcher m = Pattern.compile("\\bthis\\.([A-Za-z_\\$][A-Za-z0-9_\\$]*)").matcher(raw);
                 while (m.find()) {
+                    System.out.println("888888888");
+
                     String varName = m.group(1);
                     if (scope.resolve(varName) == null) {
+                        System.out.println("888888888");
+
                         errors.add("[TS Scope: " + scope.getName() + "] Undefined variable '" + varName +
-                                "' accessed via 'this.' (at: " + name + ")");
+                                "' accessed via 'this.' (at: " + raw + ")");
                     }
                 }
             }
         }
     }
 
-
-    // ----------------------------------
     private void checkUndefinedVariablesInMethodCalls() {
         Scope root = getRoot(tsTable);
         if (root == null) return;
@@ -383,18 +377,17 @@ public class SemanticAnalyzer {
             q.addAll(scope.getChildren());
 
             for (Symbol sym : scope.getSymbols().values()) {
-                String name = sym.getName();
-                if (name == null || !name.contains("(")) continue;
+                String raw = sym.getType() != null ? sym.getType() : sym.getName();
+                if (raw == null || !raw.contains("(")) continue;
 
-
-                List<String> params = extractMethodParameters(name);
+                List<String> params = extractMethodParameters(raw);
                 for (String param : params) {
                     String base = extractBaseIdentifier(param);
                     if (base == null) continue;
 
                     if (scope.resolve(base) == null) {
                         errors.add("[TS Scope: " + scope.getName() + "] Undefined variable '" + base +
-                                "' used as argument in method call (at: " + name + ")");
+                                "' used as argument in method call (at: " + raw + ")");
                     }
                 }
             }
@@ -402,12 +395,12 @@ public class SemanticAnalyzer {
     }
 
 
-
-
-
-
-
     private String formatError(String componentName, Symbol sym, String msg) {
-        return "[Component: " + componentName + "] " + msg + " (at: " + sym.getName() + ")";
+        if (sym.getLine() > 0 && sym.getColumn() > 0) {
+            return "[Component: " + componentName + "] " + msg +
+                    " (at line " + sym.getLine() + ", column " + sym.getColumn() + ")";
+        } else {
+            return "[Component: " + componentName + "] " + msg + " (at: " + sym.getName() + ")";
+        }
     }
 }
