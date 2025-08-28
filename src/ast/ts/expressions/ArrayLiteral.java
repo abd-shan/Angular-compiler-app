@@ -2,25 +2,40 @@ package  ast.ts.expressions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Represents an array literal
  */
-public class ArrayLiteral implements TsAtom {
-    private final List<SpreadOrExpr> elements;
 
-    public ArrayLiteral(List<SpreadOrExpr> elements) {
+public class ArrayLiteral implements TsAtom {
+    private final List<TsExpression> elements;
+
+    public ArrayLiteral(List<TsExpression> elements) {
         this.elements = elements != null ? new ArrayList<>(elements) : new ArrayList<>();
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < elements.size(); i++) {
-            if (i > 0) sb.append(", ");
-            sb.append(elements.get(i).toString());
-        }
-        sb.append("]");
-        return sb.toString();
+    public List<TsExpression> getElements() {
+        return elements;
     }
 }
+
+//public class ArrayLiteral implements TsAtom {
+//
+//    private Map<Literal,KeyValuePair> array;
+//
+//    public ArrayLiteral(Map<Literal, KeyValuePair> array) {
+//        this.array = array;
+//    }
+//
+//    public Map<Literal, KeyValuePair> getArray() {
+//        return array;
+//    }
+//
+//    @Override
+//    public String toString() {
+//        return "ArrayLiteral{" +
+//                "array=" + array +
+//                '}';
+//    }
+//}

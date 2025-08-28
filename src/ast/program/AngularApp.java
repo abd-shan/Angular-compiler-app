@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-
 public class AngularApp {
     private final List<AngularFile> angularFiles = new ArrayList<>();
 

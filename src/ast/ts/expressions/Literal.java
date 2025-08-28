@@ -5,7 +5,8 @@ public class Literal implements TsExpression {
         STRING,
         NUMBER,
         BOOLEAN,
-        NULL
+        NULL, KEYVALUE,
+
     }
 
     private Type type;

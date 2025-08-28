@@ -50,7 +50,7 @@ import { RouterModule, RouterOutlet } from '@angular/router';
   template: `
     <div class="app-container">
       <nav class="navbar">
-        <h1>Product Management</h1>
+        <h1>{{title}}</h1>
         <div class="nav-links">
           <a routerLink="/products" routerLinkActive="active">Products</a>
           <a routerLink="/add" routerLinkActive="active">Add Product</a>

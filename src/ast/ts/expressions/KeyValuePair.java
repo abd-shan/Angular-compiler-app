@@ -5,23 +5,26 @@ import java.util.Objects;
 /**
  * Represents a key-value pair in an object literal
  */
-public class KeyValuePair {
+public class KeyValuePair  {
     private final String key;
     private final TsExpression value;
-    private final boolean isSpread;
 
-    public KeyValuePair(String key, TsExpression value, boolean isSpread) {
+    public KeyValuePair(String key, TsExpression value) {
         this.key = key;
         this.value = Objects.requireNonNull(value);
-        this.isSpread = isSpread;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public TsExpression getValue() {
+        return value;
     }
 
     @Override
     public String toString() {
-        if (isSpread) {
-            return "..." + value.toString();
-        } else {
-            return key + ": " + value.toString();
-        }
+        return key + ": " + value.toString();
     }
+
 }

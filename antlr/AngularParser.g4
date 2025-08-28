@@ -357,8 +357,8 @@ genericTypeArguments
   ;
 
   spreadOrExpr
-    : ELLIPSIS tsExpr
-    | tsExpr
+    : ELLIPSIS tsExpr #Spread
+    | tsExpr          #NoSpread
     ;
 
 
