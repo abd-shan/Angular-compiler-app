@@ -22,7 +22,9 @@ public class SemanticAnalyzer {
         checkUndefinedMethodsInTemplates();
         checkUndefinedBaseIdentifiersInBindings();
         checkNgForCollections();
+        checkNgIfVariables();
         checkMethodParameterVariables();
+
     }
 
     public List<String> getErrors() {
@@ -126,15 +128,20 @@ public class SemanticAnalyzer {
         return null;
     }
 
-    private String extractVariableFromNgIfExpression(String expr) {
-        if (expr == null) return null;
-        String cleanedExpr = expr.replaceAll("[!&|()\\[\\]]", " ").trim();
+    private List<String> extractVariableFromNgIfExpression(String expr) {
+        List<String> vars = new ArrayList<>();
+        if (expr == null) return vars;
+
+        String cleanedExpr = expr.replaceAll("[!&|()\\[\\].]", " ").trim();
+
         Matcher m = Pattern.compile("([A-Za-z_\\$][A-Za-z0-9_\\$]*)").matcher(cleanedExpr);
-        if (m.find()) {
+        while (m.find()) {
             String variable = m.group(1);
-            if (!isReservedKeyword(variable)) return variable;
+            if (!isReservedKeyword(variable)) {
+                vars.add(variable);
+            }
         }
-        return null;
+        return vars;
     }
 
     private boolean isReservedKeyword(String word) {
@@ -232,6 +239,38 @@ public class SemanticAnalyzer {
             }
         }
     }
+
+    private void checkNgIfVariables() {
+        for (Scope tplCompScope : getTemplateComponentScopes()) {
+            String componentName = tplCompScope.getName();
+            Scope tsScope = getTsComponentScopeByName(componentName);
+            if (tsScope == null) continue;
+
+            for (Symbol sym : tplCompScope.getSymbols().values()) {
+                if (!isNgIf(sym)) continue;
+
+                String expr = extractDirectiveExpression(sym);
+
+                // ✅ الشرط الأول: ngIf فارغ
+                if (expr == null || expr.isBlank()) {
+                    errors.add(formatError(componentName, sym, "*ngIf directive is empty."));
+                    continue;
+                }
+
+                List<String> variables = extractVariableFromNgIfExpression(expr);
+                if (variables.isEmpty()) continue;
+
+                for (String variable : variables) {
+                    if (tsScope.resolve(variable) == null) {
+                        errors.add(formatError(componentName, sym,
+                                "Undefined variable '" + variable + "' used in *ngIf expression: " + expr));
+                    }
+                }
+
+            }
+        }
+    }
+
 
     private void checkNgForCollections() {
         for (Scope tplCompScope : getTemplateComponentScopes()) {
