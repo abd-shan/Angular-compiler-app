@@ -19,16 +19,13 @@ public class SemanticAnalyzer {
     }
 
     public void analyze() {
-        // ✅ Angular template checks
+
         checkUndefinedMethodsInTemplates();
         checkUndefinedBaseIdentifiersInBindings();
         checkNgForCollections();
         checkNgIfVariables();
         checkMethodParameterVariables();
 
-        // ✅ TypeScript semantic checks
-        checkUndefinedThisVariables();
-        checkUndefinedVariablesInMethodCalls();
     }
 
     public List<String> getErrors() {
@@ -333,66 +330,6 @@ public class SemanticAnalyzer {
         }
     }
 
-    // ---------------- TYPESCRIPT SEMANTIC CHECKS ----------------
-    private void checkUndefinedThisVariables() {
-        Scope root = getRoot(tsTable);
-        if (root == null) return;
-
-        Queue<Scope> q = new ArrayDeque<>();
-        q.add(root);
-
-        while (!q.isEmpty()) {
-            Scope scope = q.poll();
-            q.addAll(scope.getChildren());
-
-            for (Symbol sym : scope.getSymbols().values()) {
-                String raw = sym.getType() != null ? sym.getType() : sym.getName();
-                if (raw == null) continue;
-
-                Matcher m = Pattern.compile("\\bthis\\.([A-Za-z_\\$][A-Za-z0-9_\\$]*)").matcher(raw);
-                while (m.find()) {
-                    System.out.println("888888888");
-
-                    String varName = m.group(1);
-                    if (scope.resolve(varName) == null) {
-                        System.out.println("888888888");
-
-                        errors.add("[TS Scope: " + scope.getName() + "] Undefined variable '" + varName +
-                                "' accessed via 'this.' (at: " + raw + ")");
-                    }
-                }
-            }
-        }
-    }
-
-    private void checkUndefinedVariablesInMethodCalls() {
-        Scope root = getRoot(tsTable);
-        if (root == null) return;
-
-        Queue<Scope> q = new ArrayDeque<>();
-        q.add(root);
-
-        while (!q.isEmpty()) {
-            Scope scope = q.poll();
-            q.addAll(scope.getChildren());
-
-            for (Symbol sym : scope.getSymbols().values()) {
-                String raw = sym.getType() != null ? sym.getType() : sym.getName();
-                if (raw == null || !raw.contains("(")) continue;
-
-                List<String> params = extractMethodParameters(raw);
-                for (String param : params) {
-                    String base = extractBaseIdentifier(param);
-                    if (base == null) continue;
-
-                    if (scope.resolve(base) == null) {
-                        errors.add("[TS Scope: " + scope.getName() + "] Undefined variable '" + base +
-                                "' used as argument in method call (at: " + raw + ")");
-                    }
-                }
-            }
-        }
-    }
 
 
     private String formatError(String componentName, Symbol sym, String msg) {
