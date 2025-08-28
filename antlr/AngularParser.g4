@@ -161,10 +161,15 @@ componentList
 // ===== TypeScript (Statements + Expressions) =====
 
 ts
-  : tsStatement
+  : tsStatement*
   ;
 
-tsStatement:(tsAttribute | stateDecl | method)* constructor? (tsAttribute | stateDecl | method)*;
+
+tsStatement:
+    tsAttribute
+    | stateDecl
+    | method
+    |constructor;
 
 // >>> TypeScript Attributes
 

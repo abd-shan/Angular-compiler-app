@@ -88,81 +88,81 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		return app;
 	}
 
-    @Override
-    public AngularFile visitAngularFile(AngularParser.AngularFileContext ctx) {
-        if (ctx.componentFile() != null) {
-            return visitComponentFile(ctx.componentFile()); // ComponentFile
-        }
+	@Override
+	public AngularFile visitAngularFile(AngularParser.AngularFileContext ctx) {
+		if (ctx.componentFile() != null) {
+			return visitComponentFile(ctx.componentFile()); // ComponentFile
+		}
 
-        if (ctx.stateFile() != null) {
-            return visitStateFile(ctx.stateFile()); // StateFile
-        }
+		if (ctx.stateFile() != null) {
+			return visitStateFile(ctx.stateFile()); // StateFile
+		}
 
-        if (ctx.routeFile() != null) {
-            return visitRouteFile(ctx.routeFile()); // RouteFile
-        }
+		if (ctx.routeFile() != null) {
+			return visitRouteFile(ctx.routeFile()); // RouteFile
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    @Override
-    public RouteFile visitRouteFile(AngularParser.RouteFileContext ctx) {
-        RouteFile routeFile = new RouteFile();
+	@Override
+	public RouteFile visitRouteFile(AngularParser.RouteFileContext ctx) {
+		RouteFile routeFile = new RouteFile();
 
-        tsSymbolTable.enterScope("routeFile");
+		tsSymbolTable.enterScope("routeFile");
 
-        // imports
-        for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
-            String importStmt = String.valueOf(visitImportStatement(impCtx));
-            routeFile.addImport(importStmt);
-        }
+		// imports
+		for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
+			String importStmt = String.valueOf(visitImportStatement(impCtx));
+			routeFile.addImport(importStmt);
+		}
 
-        // routes
-        List<AngularParser.RouteObjectContext> objs = ctx.routeObject();
-        for (AngularParser.RouteObjectContext objCtx : objs) {
-            RouteElement elem = visitRouteObject(objCtx);
-            if (elem != null) {
-                routeFile.addRoute(elem);
-
-
-                routerSymbolTable.addRoute(elem.getPath(), elem.getComponent());
-            }
-        }
-
-        tsSymbolTable.exitScope();
-        return routeFile;
-    }
+		// routes
+		List<AngularParser.RouteObjectContext> objs = ctx.routeObject();
+		for (AngularParser.RouteObjectContext objCtx : objs) {
+			RouteElement elem = visitRouteObject(objCtx);
+			if (elem != null) {
+				routeFile.addRoute(elem);
 
 
-    public RouteElement visitRouteObject(AngularParser.RouteObjectContext ctx) {
-        String path = null;
-        String component = null;
+				routerSymbolTable.addRoute(elem.getPath(), elem.getComponent());
+			}
+		}
 
-        for (AngularParser.RoutePropertyContext propCtx : ctx.routeProperty()) {
-            String key = propCtx.ID().getText();
-            String rawValue = propCtx.tsExpr().getText();
-
-            if ("path".equals(key)) {
-                if (rawValue.startsWith("\"") || rawValue.startsWith("'")) {
-                    path = rawValue.substring(1, rawValue.length() - 1);
-                } else {
-                    path = rawValue;
-                }
-            } else if ("component".equals(key)) {
-                component = rawValue;
-            }
-        }
-
-        if (path != null && component != null) {
-            return new RouteElement(path, component);
-        }
-        return null;
-    }
+		tsSymbolTable.exitScope();
+		return routeFile;
+	}
 
 
-    @Override
-    public StateFile visitStateFile(AngularParser.StateFileContext ctx) {
-        StateFile stateFile = new StateFile();
+	public RouteElement visitRouteObject(AngularParser.RouteObjectContext ctx) {
+		String path = null;
+		String component = null;
+
+		for (AngularParser.RoutePropertyContext propCtx : ctx.routeProperty()) {
+			String key = propCtx.ID().getText();
+			String rawValue = propCtx.tsExpr().getText();
+
+			if ("path".equals(key)) {
+				if (rawValue.startsWith("\"") || rawValue.startsWith("'")) {
+					path = rawValue.substring(1, rawValue.length() - 1);
+				} else {
+					path = rawValue;
+				}
+			} else if ("component".equals(key)) {
+				component = rawValue;
+			}
+		}
+
+		if (path != null && component != null) {
+			return new RouteElement(path, component);
+		}
+		return null;
+	}
+
+
+	@Override
+	public StateFile visitStateFile(AngularParser.StateFileContext ctx) {
+		StateFile stateFile = new StateFile();
 
 		// file scope
 		tsSymbolTable.enterScope("stateFile");
@@ -551,11 +551,12 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			return new TsBlock(new ArrayList<>());
 		}
 
-		TsStatement statement = (TsStatement) visitTsStatement(ctx.tsStatement());
 		List<TsStatement> statements = new ArrayList<>();
-
-		if (statement != null) {
-			statements.add(statement);
+		for (AngularParser.TsStatementContext tsCtx : ctx.tsStatement()) {
+			TsStatement statement = (TsStatement) visitTsStatement(tsCtx);
+			if (statement != null) {
+				statements.add(statement);
+			}
 		}
 
 		return new TsBlock(statements);
@@ -567,45 +568,30 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			return null;
 		}
 
-		List<TsStatement> statements = new ArrayList<>();
+		TsStatement statement = null;
 
-		// Iterate children in source order to avoid duplicating before/after constructor lists
-		for (var child : ctx.children) {
-			TsStatement statement = null;
-
-			if (child instanceof AngularParser.TsAttributeContext attrCtx) {
-				statement = (TsStatement) visit(attrCtx);
-				if (statement instanceof DeclareAttribute da) {
-					tsSymbolTable.define(da.getName(), "field");
-				} else if (statement instanceof DeclareAndAssignAttribute daa) {
-					tsSymbolTable.define(daa.getName(), "field");
-				}
-			} else if (child instanceof AngularParser.StateDeclContext stateDeclCtx) {
-				statement = (TsStatement) visitStateDecl(stateDeclCtx);
-			} else if (child instanceof AngularParser.MethodContext methodCtx) {
-				statement = (TsStatement) visitMethod(methodCtx);
-				if (statement instanceof Method m) {
-					tsSymbolTable.define(m.getName(), "method");
-				}
-			} else if (child instanceof AngularParser.ConstructorContext ctorCtx) {
-				statement = (TsStatement) visitConstructor(ctorCtx);
-				if (statement instanceof Constructor) {
-					tsSymbolTable.define("constructor", "constructor");
-				}
+		if (ctx.tsAttribute() != null) {
+			statement = (TsStatement) visit(ctx.tsAttribute());
+			if (statement instanceof DeclareAttribute da) {
+				tsSymbolTable.define(da.getName(), "field");
+			} else if (statement instanceof DeclareAndAssignAttribute daa) {
+				tsSymbolTable.define(daa.getName(), "field");
 			}
-
-			if (statement != null) {
-				statements.add(statement);
+		} else if (ctx.stateDecl() != null) {
+			statement = (TsStatement) visitStateDecl(ctx.stateDecl());
+		} else if (ctx.method() != null) {
+			statement = (TsStatement) visitMethod(ctx.method());
+			if (statement instanceof Method m) {
+				tsSymbolTable.define(m.getName(), "method");
+			}
+		} else if (ctx.constructor() != null) {
+			statement = (TsStatement) visitConstructor(ctx.constructor());
+			if (statement instanceof Constructor) {
+				tsSymbolTable.define("constructor", "constructor");
 			}
 		}
 
-		if (statements.isEmpty()) {
-			return null;
-		} else if (statements.size() == 1) {
-			return statements.get(0);
-		} else {
-			return new TsStatementBlock(statements);
-		}
+		return statement;
 	}
 
 	@Override
@@ -968,7 +954,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		return new BasicType(BasicType.Primitive.ANY); // Default fallback
 	}
 
-    // Statement visitor methods
+	// Statement visitor methods
 
 	@Override
 	public TsStatement visitDeclareVariable(AngularParser.DeclareVariableContext ctx) {
@@ -1166,6 +1152,8 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 	// ============  Primary Expressions ============
 	@Override
 	public PrimaryExpression visitTsPrimary(AngularParser.TsPrimaryContext ctx) {
+		System.out.println(ctx.getText());
+		System.out.println("hi");
 		TsAtom atom = (TsAtom) visit(ctx.tsAtom());
 		List<TsPostfix> postfixes = new ArrayList<>();
 
@@ -1781,7 +1769,12 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		} else if (attribute instanceof StandardAttribute sa) {
 			name = tagName + "." + sa.getName() + "#" + (++templateBindingCounter);
 			type = sa.getValue();
-
+			if ("routerLink".equals(sa.getName())) {
+				String path = sa.getValue();
+				// Heuristic: ast.component name likely equals outer ast.component context; we will resolve later if needed
+				// Here, we place the path with unknown ast.component; actual ast.component resolution requires a route config
+				routerSymbolTable.addRoute(path, "(via routerLink in template)");
+			}
 		} else if (attribute instanceof BooleanAttribute ba) {
 			name = tagName + "." + ba.getName() + "#" + (++templateBindingCounter);
 			type = "boolean-attr";
