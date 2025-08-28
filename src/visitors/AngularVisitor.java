@@ -7,6 +7,8 @@ import ast.component.SimpleProvider;
 import ast.css.ExternalStyle;
 import ast.css.InlineStyles;
 import ast.css.StylesOption;
+import ast.program.*;
+import ast.router.RouteElement;
 import gen.AngularLexer;
 import gen.AngularParser;
 import gen.AngularParserBaseVisitor;
@@ -22,10 +24,6 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import ast.program.AngularApp;
-import ast.program.AngularFile;
-import ast.program.ComponentFile;
-import ast.program.StateFile;
 import ast.state.*;
 import ast.ts.expressions.*;
 import ast.ts.stateManagement.*;
@@ -45,6 +43,8 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
     private final SymbolTable templateSymbolTable = new SymbolTable();
     private int templateBindingCounter = 0;
     private final RouterSymbolTable routerSymbolTable = new RouterSymbolTable();
+
+
 
     public SymbolTable getTsSymbolTable() {
         return tsSymbolTable;
@@ -77,13 +77,70 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         if (ctx.componentFile() != null) {
             return visitComponentFile(ctx.componentFile()); // ComponentFile
         }
-
         if (ctx.stateFile() != null) {
             return visitStateFile(ctx.stateFile()); // StateFile
         }
-
+        if (ctx.routeFile() != null) {
+            return visitRouteFile(ctx.routeFile()); // RouteFile
+        }
         return null;
     }
+
+    @Override
+    public RouteFile visitRouteFile(AngularParser.RouteFileContext ctx) {
+        RouteFile routeFile = new RouteFile();
+
+        tsSymbolTable.enterScope("routeFile");
+
+        // imports
+        for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
+            String importStmt = String.valueOf(visitImportStatement(impCtx));
+            routeFile.addImport(importStmt);
+        }
+
+        // routes
+        List<AngularParser.RouteObjectContext> objs = ctx.routeObject();
+        for (AngularParser.RouteObjectContext objCtx : objs) {
+            RouteElement elem = visitRouteObject(objCtx);
+            if (elem != null) {
+                routeFile.addRoute(elem);
+
+
+                routerSymbolTable.addRoute(elem.getPath(), elem.getComponent());
+            }
+        }
+
+        tsSymbolTable.exitScope();
+        return routeFile;
+    }
+
+
+    public RouteElement visitRouteObject(AngularParser.RouteObjectContext ctx) {
+        String path = null;
+        String component = null;
+
+        for (AngularParser.RoutePropertyContext propCtx : ctx.routeProperty()) {
+            String key = propCtx.ID().getText();
+            String rawValue = propCtx.tsExpr().getText();
+
+            if ("path".equals(key)) {
+                if (rawValue.startsWith("\"") || rawValue.startsWith("'")) {
+                    path = rawValue.substring(1, rawValue.length() - 1);
+                } else {
+                    path = rawValue;
+                }
+            } else if ("component".equals(key)) {
+                component = rawValue;
+            }
+        }
+
+        if (path != null && component != null) {
+            return new RouteElement(path, component);
+        }
+        return null;
+    }
+
+
 
     @Override
     public StateFile visitStateFile(AngularParser.StateFileContext ctx) {
@@ -303,7 +360,8 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
         templateSymbolTable.enterScope(className);
         templateBindingCounter = 0;
 
-        // معالجة قالب HTML إذا كان موجوداً
+
+
         if (ctx.htmlOption() != null) {
             template = processHtmlOption(ctx.htmlOption());
         }
@@ -333,7 +391,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
     @Override
     public HtmlDocument visitExternalTemplate(AngularParser.ExternalTemplateContext ctx) {
-        // للقوالب الخارجية، يمكنك إضافة منطق لتحميل الملف هنا
         return new HtmlDocument();
     }
 

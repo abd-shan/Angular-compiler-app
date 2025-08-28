@@ -569,5 +569,16 @@ export class AddEditProductComponent implements OnInit {
 }
 
 
+import { Routes } from '@angular/router';
+import { ProductListComponent } from './product-list/product-list.component';
+import { ProductDetailComponent } from './product-detail/product-detail.component';
+import { AddEditProductComponent } from './add-product/add-product.component';
 
 
+
+export const routes: Routes = [
+  { path: 'products', component: ProductListComponent },
+  { path: 'product/:id', component: ProductDetailComponent },
+  { path: 'add', component: AddEditProductComponent },
+  { path: 'edit/:id', component: AddEditProductComponent }
+];

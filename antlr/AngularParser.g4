@@ -12,10 +12,28 @@ angularApp
   : angularFile+ EOF
   ;
 
-angularFile
-  : componentFile
-  | stateFile
-  ;
+
+
+  angularFile
+    : componentFile
+    | stateFile
+    | routeFile
+    ;
+
+  // ======================= route file rules =======================
+  routeFile
+    : importStatement*                                    // optional imports
+      EXPORT? CONST ID COLON ID EQUAL_SIGN                // e.g. export const routes: Routes =
+      LBRACKET (routeObject (COMMA routeObject)*)? RBRACKET SEMICOLON?
+    ;
+
+  routeObject
+    : LBRACE (routeProperty (COMMA routeProperty)*)? RBRACE
+    ;
+
+  routeProperty
+    : ID COLON tsExpr
+    ;
 
 // ==================== state file ====================
 //done
