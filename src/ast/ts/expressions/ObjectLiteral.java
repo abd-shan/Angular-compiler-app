@@ -14,6 +14,10 @@ public class ObjectLiteral implements TsAtom {
         this.properties = properties != null ? new ArrayList<>(properties) : new ArrayList<>();
     }
 
+    public List<KeyValuePair> getProperties() {
+        return properties;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("{");

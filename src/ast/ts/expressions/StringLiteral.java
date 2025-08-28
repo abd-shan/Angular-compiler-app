@@ -12,6 +12,10 @@ public class StringLiteral implements TsAtom {
         this.value = Objects.requireNonNull(value);
     }
 
+    public String getValue() {
+        return value;
+    }
+
     @Override
     public String toString() {
         return "\"" + value.replace("\"", "\\\"") + "\"";

@@ -33,6 +33,8 @@ import ast.ts.types.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import symbolTable.SymbolTable;
 import symbolTable.RouterSymbolTable;
@@ -1152,8 +1154,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 	// ============  Primary Expressions ============
 	@Override
 	public PrimaryExpression visitTsPrimary(AngularParser.TsPrimaryContext ctx) {
-		System.out.println(ctx.getText());
-		System.out.println("hi");
 		TsAtom atom = (TsAtom) visit(ctx.tsAtom());
 		List<TsPostfix> postfixes = new ArrayList<>();
 
@@ -1210,19 +1210,67 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		}
 		return new ObjectLiteral(properties);
 	}
-
 	@Override
 	public TsAtom visitArray(AngularParser.ArrayContext ctx) {
-		List<SpreadOrExpr> elements = new ArrayList<>();
+		List<TsExpression> elements = new ArrayList<>();
+
 		if (ctx.spreadOrExpr() != null) {
 			for (AngularParser.SpreadOrExprContext soeCtx : ctx.spreadOrExpr()) {
-				SpreadOrExpr soe = (SpreadOrExpr) visitSpreadOrExpr(soeCtx);
+				SpreadOrExpr soe = (SpreadOrExpr) visit(soeCtx);
 				if (soe != null) {
-					elements.add(soe);
+					elements.add(soe.getExpression()); // store expression directly
 				}
 			}
 		}
+
 		return new ArrayLiteral(elements);
+	}
+
+	/*
+	@Override
+	public TsAtom visitArray(AngularParser.ArrayContext ctx) {
+		Map<Literal, KeyValuePair> arrayMap = new HashMap<>();
+		
+		if (ctx.spreadOrExpr() != null) {
+			int index = 0;
+			for (AngularParser.SpreadOrExprContext soeCtx : ctx.spreadOrExpr()) {
+				SpreadOrExpr soe = (SpreadOrExpr) visit(soeCtx);
+				if (soe != null) {
+					TsExpression expr = soe.getExpression();
+					
+					// Create a Literal key for the array index
+					Literal key = new Literal(Literal.Type.NUMBER, String.valueOf(index));
+					
+					// If the expression is an ObjectLiteral, extract its properties
+					if (expr instanceof ObjectLiteral) {
+						ObjectLiteral objLit = (ObjectLiteral) expr;
+						// For now, we'll create a single KeyValuePair for the entire object
+						// You might want to extract individual properties here
+						KeyValuePair kvp = new KeyValuePair("object", expr);
+						arrayMap.put(key, kvp);
+					} else {
+						// For other expressions, create a simple KeyValuePair
+						KeyValuePair kvp = new KeyValuePair("element", expr);
+						arrayMap.put(key, kvp);
+					}
+					index++;
+				}
+			}
+		}
+		
+		return new ArrayLiteral(arrayMap);
+	}
+	*/
+	@Override
+	public SpreadOrExpr visitSpread(AngularParser.SpreadContext ctx) {
+		TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
+		return new SpreadOrExpr(true, expression);
+	}
+
+	@Override
+	public SpreadOrExpr visitNoSpread(AngularParser.NoSpreadContext ctx) {
+		TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
+		return new SpreadOrExpr(false, expression);
 	}
 
 	@Override
@@ -1323,13 +1371,6 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 	}
 
 	@Override
-	public SpreadOrExpr visitSpreadOrExpr(AngularParser.SpreadOrExprContext ctx) {
-		boolean isSpread = ctx.ELLIPSIS() != null;
-		TsExpression expression = (TsExpression) visitTsExpr(ctx.tsExpr());
-		return new SpreadOrExpr(isSpread, expression);
-	}
-
-	@Override
 	public ArrowFunction visitArrowFunction(AngularParser.ArrowFunctionContext ctx) {
 		List<String> parameters = new ArrayList<>();
 		if (ctx.ID() != null) {
@@ -1372,7 +1413,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		boolean isSpread = ctx.ELLIPSIS() != null;
 		TsExpression value = (TsExpression) visitTsExpr(ctx.tsExpr());
 
-		return new KeyValuePair(key, value, isSpread);
+
+
+		return new KeyValuePair(key, value);
 	}
 
 	@Override

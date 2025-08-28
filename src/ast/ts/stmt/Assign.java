@@ -15,6 +15,14 @@ public class Assign implements TsStatement {
         this.expression = Objects.requireNonNull(expression);
     }
 
+    public LeftHandSide getLeftHandSide() {
+        return leftHandSide;
+    }
+
+    public TsExpression getExpression() {
+        return expression;
+    }
+
     @Override
     public String toString() {
         return leftHandSide.toString() + " = " + expression.toString() + ";";

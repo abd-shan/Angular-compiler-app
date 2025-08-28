@@ -15,6 +15,14 @@ public class SpreadOrExpr {
         this.expression = Objects.requireNonNull(expression);
     }
 
+    public boolean isSpread() {
+        return isSpread;
+    }
+
+    public TsExpression getExpression() {
+        return expression;
+    }
+
     @Override
     public String toString() {
         return (isSpread ? "..." : "") + expression.toString();

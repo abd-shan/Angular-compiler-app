@@ -16,6 +16,14 @@ public class PrimaryExpression implements TsExpression {
         this.postfixes = postfixes != null ? new ArrayList<>(postfixes) : new ArrayList<>();
     }
 
+    public TsAtom getAtom() {
+        return atom;
+    }
+
+    public List<TsPostfix> getPostfixes() {
+        return postfixes;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(atom.toString());

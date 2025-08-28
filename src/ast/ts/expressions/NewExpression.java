@@ -20,6 +20,10 @@ public class NewExpression implements TsAtom {
         this.arguments = arguments != null ? new ArrayList<>(arguments) : new ArrayList<>();
     }
 
+    public List<TsExpression> getArguments() {
+        return arguments;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("new " + constructor);
