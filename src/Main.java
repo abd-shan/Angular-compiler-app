@@ -1,5 +1,6 @@
 import gen.AngularLexer;
 import gen.AngularParser;
+import generator.HtmlGenerator;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -25,7 +26,7 @@ public class Main {
 		ParseTree tree = parser.angularApp();
 
 		// build AST + symbol tables
-		visitor = new AngularVisitor();
+		visitor = new AngularVisitor(cs);
 		AngularApp program = (AngularApp) visitor.visit(tree);
 
 		// print ast.program (AST)
@@ -58,5 +59,9 @@ public class Main {
 
 		System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< ROUTER SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
 		System.out.println(routerTable);
+
+
+		HtmlGenerator htmlGenerator=new HtmlGenerator(program);
+
 	}
 }
