@@ -24,6 +24,9 @@ public class SemanticAnalyzer {
         checkNgForCollections();
         checkNgIfVariables();
         checkMethodParameterVariables();
+        checkUndefinedThisVariables();
+        checkUndefinedVariablesInMethodCalls();
+
 
     }
 
@@ -251,7 +254,7 @@ public class SemanticAnalyzer {
 
                 String expr = extractDirectiveExpression(sym);
 
-                // ✅ الشرط الأول: ngIf فارغ
+
                 if (expr == null || expr.isBlank()) {
                     errors.add(formatError(componentName, sym, "*ngIf directive is empty."));
                     continue;
@@ -336,6 +339,69 @@ public class SemanticAnalyzer {
             }
         }
     }
+
+
+    private void checkUndefinedThisVariables() {
+        Scope root = getRoot(tsTable);
+        if (root == null) return;
+
+        Queue<Scope> q = new ArrayDeque<>();
+        q.add(root);
+
+        while (!q.isEmpty()) {
+            Scope scope = q.poll();
+            q.addAll(scope.getChildren());
+
+            for (Symbol sym : scope.getSymbols().values()) {
+                String name = sym.getName();
+                if (name == null) continue;
+
+
+                Matcher m = Pattern.compile("\\bthis\\.([A-Za-z_\\$][A-Za-z0-9_\\$]*)").matcher(name);
+                while (m.find()) {
+                    String varName = m.group(1);
+                    if (scope.resolve(varName) == null) {
+                        errors.add("[TS Scope: " + scope.getName() + "] Undefined variable '" + varName +
+                                "' accessed via 'this.' (at: " + name + ")");
+                    }
+                }
+            }
+        }
+    }
+
+
+    // ----------------------------------
+    private void checkUndefinedVariablesInMethodCalls() {
+        Scope root = getRoot(tsTable);
+        if (root == null) return;
+
+        Queue<Scope> q = new ArrayDeque<>();
+        q.add(root);
+
+        while (!q.isEmpty()) {
+            Scope scope = q.poll();
+            q.addAll(scope.getChildren());
+
+            for (Symbol sym : scope.getSymbols().values()) {
+                String name = sym.getName();
+                if (name == null || !name.contains("(")) continue;
+
+
+                List<String> params = extractMethodParameters(name);
+                for (String param : params) {
+                    String base = extractBaseIdentifier(param);
+                    if (base == null) continue;
+
+                    if (scope.resolve(base) == null) {
+                        errors.add("[TS Scope: " + scope.getName() + "] Undefined variable '" + base +
+                                "' used as argument in method call (at: " + name + ")");
+                    }
+                }
+            }
+        }
+    }
+
+
 
 
 

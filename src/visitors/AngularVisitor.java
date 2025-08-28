@@ -1781,12 +1781,7 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		} else if (attribute instanceof StandardAttribute sa) {
 			name = tagName + "." + sa.getName() + "#" + (++templateBindingCounter);
 			type = sa.getValue();
-			if ("routerLink".equals(sa.getName())) {
-				String path = sa.getValue();
-				// Heuristic: ast.component name likely equals outer ast.component context; we will resolve later if needed
-				// Here, we place the path with unknown ast.component; actual ast.component resolution requires a route config
-				routerSymbolTable.addRoute(path, "(via routerLink in template)");
-			}
+
 		} else if (attribute instanceof BooleanAttribute ba) {
 			name = tagName + "." + ba.getName() + "#" + (++templateBindingCounter);
 			type = "boolean-attr";
