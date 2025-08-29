@@ -18,7 +18,13 @@ public class ArrayLiteral implements TsAtom {
     public List<TsExpression> getElements() {
         return elements;
     }
+
+    @Override
+    public String toString() {
+        return elements.toString();
+    }
 }
+
 
 //public class ArrayLiteral implements TsAtom {
 //

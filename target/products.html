@@ -37,18 +37,18 @@
       const products = getProducts();
       const grid = document.getElementById("productsGrid");
       grid.innerHTML = "";
-      products.forEach(p => {
+      products.forEach(product => {
         const card = document.createElement("div");
         card.className = "product-card";
         card.innerHTML = `
-          <img src="${p.image}" alt="${p.name}">
-          <h3>${p.name}</h3>
-          <p class="description">${p.description}</p>
-          <p class="price"><strong>Price: ${p.price} SAR</strong></p>
+          <img src="${product.image}" alt="${product.name}">
+          <h3>${product.name}</h3>
+          <p class="description">${product.description}</p>
+          <p class="price"><strong>Price: ${product.price} SAR</strong></p>
           <div class="actions">
-            <button class="btn-details" onclick="viewDetails(${p.id})">View Details</button>
-            <button class="btn-edit" onclick="editProduct(${p.id})">Edit</button>
-            <button class="btn-delete" onclick="deleteProduct(${p.id})">Delete</button>
+            <button class="btn-details" onclick="viewDetails(${product.id})">View Details</button>
+            <button class="btn-edit" onclick="editProduct(${product.id})">Edit</button>
+            <button class="btn-delete" onclick="deleteProduct(${product.id})">Delete</button>
           </div>`;
         grid.appendChild(card);
       });
