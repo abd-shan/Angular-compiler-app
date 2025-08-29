@@ -20,7 +20,11 @@
 
   <script>
     function getProducts() {
-      return JSON.parse(localStorage.getItem("products")) || [];
+      return JSON.parse(localStorage.getItem("products")) || [
+        { id: 1, name: "HP Laptop", description: "Brand new HP Laptop with Intel i7 processor", image: "https://images.pexels.com/photos/7974/pexels-photo.jpg", price: 3500 },
+        { id: 2, name: "iPhone", description: "iPhone 14 Pro with advanced camera system", image: "https://images.pexels.com/photos/7974/pexels-photo.jpg", price: 4500 },
+        { id: 3, name: "AirPods", description: "Wireless Apple AirPods", image: "https://images.pexels.com/photos/7974/pexels-photo.jpg", price: 800 }
+      ];
     }
     function getProduct(id) {
       return getProducts().find(p => p.id === id);

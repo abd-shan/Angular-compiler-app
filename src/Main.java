@@ -61,7 +61,7 @@ public class Main {
 		System.out.println(routerTable);
 
 
-		HtmlGenerator htmlGenerator=new HtmlGenerator(program);
+		HtmlGenerator htmlGenerator=new HtmlGenerator(program,routerTable);
 
 	}
 }

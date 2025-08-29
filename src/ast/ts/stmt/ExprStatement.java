@@ -15,6 +15,11 @@ public class ExprStatement implements TsStatement {
         this.expression = Objects.requireNonNull(expression);
     }
 
+
+    public TsExpression getExpression() {
+        return expression;
+    }
+
     @Override
     public String toString() {
         return expression.toString() + ";";
