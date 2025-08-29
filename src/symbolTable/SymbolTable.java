@@ -18,7 +18,11 @@ public class SymbolTable {
     }
 
     public void define(String name, String type) {
-        currentScope.define(new Symbol(name, type));
+        define(name, type, -1, -1);
+    }
+
+    public void define(String name, String type, int line, int column) {
+        currentScope.define(new Symbol(name, type, line, column));
     }
 
     public Symbol resolve(String name) {
@@ -27,6 +31,15 @@ public class SymbolTable {
 
     public Scope getCurrentScope() {
         return currentScope;
+    }
+
+    // Helper method to get line/column from ANTLR context
+    public static int getLineFromContext(org.antlr.v4.runtime.ParserRuleContext ctx) {
+        return ctx != null && ctx.start != null ? ctx.start.getLine() : -1;
+    }
+
+    public static int getColumnFromContext(org.antlr.v4.runtime.ParserRuleContext ctx) {
+        return ctx != null && ctx.start != null ? ctx.start.getCharPositionInLine() : -1;
     }
 
     private static String buildScopePath(Scope scope) {
@@ -48,10 +61,15 @@ public class SymbolTable {
         String path = buildScopePath(scope);
         java.util.Map<String, Symbol> symbols = scope.getSymbols();
         if (symbols.isEmpty()) {
-            rows.add(new String[] { path, "", "" });
+            rows.add(new String[] { path, "", ""});
         } else {
             for (Symbol sym : symbols.values()) {
-                rows.add(new String[] { path, sym.getName(), sym.getType() });
+                rows.add(new String[] {
+                        path,
+                        sym.getName(),
+                        sym.getType(),
+
+                });
             }
         }
         for (Scope child : scope.getChildren()) {
@@ -62,9 +80,9 @@ public class SymbolTable {
     private static int[] computeColumnWidths(java.util.List<String[]> rows) {
         int[] widths = new int[] { "Scope".length(), "Name".length(), "Type".length() };
         for (String[] r : rows) {
-            if (r[0] != null) widths[0] = Math.max(widths[0], r[0].length());
-            if (r[1] != null) widths[1] = Math.max(widths[1], r[1].length());
-            if (r[2] != null) widths[2] = Math.max(widths[2], r[2].length());
+            for (int i = 0; i < r.length; i++) {
+                if (r[i] != null) widths[i] = Math.max(widths[i], r[i].length());
+            }
         }
         return widths;
     }
@@ -87,11 +105,12 @@ public class SymbolTable {
         sb.append('\n');
     }
 
-    private static void appendRow(StringBuilder sb, int[] widths, String c1, String c2, String c3) {
-        sb.append('|').append(' ').append(padRight(c1, widths[0])).append(' ').append('|')
-          .append(' ').append(padRight(c2, widths[1])).append(' ').append('|')
-          .append(' ').append(padRight(c3, widths[2])).append(' ').append('|')
-          .append('\n');
+    private static void appendRow(StringBuilder sb, int[] widths, String... columns) {
+        sb.append('|');
+        for (int i = 0; i < columns.length; i++) {
+            sb.append(' ').append(padRight(columns[i], widths[i])).append(' ').append('|');
+        }
+        sb.append('\n');
     }
 
     @Override
@@ -109,10 +128,10 @@ public class SymbolTable {
 
         StringBuilder sb = new StringBuilder();
         appendSeparator(sb, widths);
-        appendRow(sb, widths, "Scope", "Name", "Type");
+        appendRow(sb, widths, "Scope", "Name", "Type" );
         appendSeparator(sb, widths);
         for (String[] r : rows) {
-            appendRow(sb, widths, r[0], r[1], r[2]);
+            appendRow(sb, widths, r[0], r[1], r[2] );
         }
         appendSeparator(sb, widths);
         return sb.toString();
