@@ -756,6 +756,7 @@ import { AddEditProductComponent } from './add-product/add-product.component';
 export const routes: Routes = [
   { path: 'products', component: ProductListComponent },
   { path: 'product/:id', component: ProductDetailComponent },
-  { path: 'add', component: AddEditProductComponent },
-  { path: 'edit/:id', component: AddEditProductComponent }
+  { path: 'add', component: AddProductComponent },
+  { path: 'edit/:id', component: EditProductComponent }
 ];
+
