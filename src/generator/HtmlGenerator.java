@@ -86,6 +86,22 @@ public class HtmlGenerator {
 //            String expressions = childChild.getExpression();
 //            System.out.println("expressions" + expressions);
 
+//        ElementNode elementNode = (ElementNode) files.get(2).getTemplate().getNodes().getFirst();
+//        System.out.println("elementNode "+elementNode);
+//        ElementNode elementNode2 = (ElementNode) elementNode.getChildren().get(1);
+//        System.out.println("elementNode2 "+elementNode2);
+//        ElementNode child= (ElementNode) elementNode2.getChildren().get(4);
+//        System.out.println("child "+child);
+//        StandardAttribute standardAttribute = (StandardAttribute) child.getAttributes().get(0);
+//        System.out.println("standardAttribute "+standardAttribute);
+//        AngularEventBinding angularEventBinding = (AngularEventBinding) child.getAttributes().get(1);
+//        System.out.println("angularEventBinding "+angularEventBinding);
+
+
+//        NgIfAttribute ngIfAttribute = (NgIfAttribute) elementNode2.getAttributes().get(1);
+//        System.out.println("ngIfAttribute "+ngIfAttribute);
+//        String expression = ngIfAttribute.getExpression();
+//        System.out.println("expression "+expression);
 
         for (ComponentFile file : files) {
             createHtmlTemplate(file);
@@ -129,12 +145,18 @@ public class HtmlGenerator {
             writer.write("  <!-- " + className + " template -->\n");
             writer.write("<script>\n");
 
-            // ✅ Always generate get functions
+            // ✅ NEW: Add URL param parsing only for /:id routes
+            if (isIdRoutedComponent(file.getClassName())) {
+                writer.write("const params = new URLSearchParams(window.location.search);\n");
+                writer.write("const id = Number(params.get(\"id\"));\n\n");
+            }
+
+// ✅ Always generate get functions
             Map<String, List<Map<String, TsExpression>>> objects = extractObjectArrays();
             String jsFunctions = generateGetFunctions(objects);
             writer.write(jsFunctions);
 
-            // ✅ Generate render functions if needed
+// ✅ Generate render functions if needed
             if (!ngForObjects.isEmpty()) {
                 Map<String, List<Map<String, TsExpression>>> filtered = new HashMap<>();
                 for (String obj : ngForObjects) {
@@ -146,11 +168,18 @@ public class HtmlGenerator {
                 writer.write(renderFunctions);
             }
 
-            // ✅ NEW: Generate routing functions from methods
+// ✅ Generate routing functions from methods
             String routingFunctions = generateRoutingFunctions(file);
             writer.write(routingFunctions);
 
+
+            String ngifElements = generateNgIfFunctions(ngIfElements);
+            writer.write(ngifElements);
+
+
             writer.write("</script>\n");
+
+
             writer.write("</body>\n");
             writer.write("</html>\n");
 
@@ -163,8 +192,9 @@ public class HtmlGenerator {
 
 
     String ngforParentId;
-
     List<ElementNode> ngForElements = new ArrayList<>();
+    String ngifParentId;
+    List<ElementNode> ngIfElements = new ArrayList<>();
 
 
     private String generateHtmlFromNode(Node node, Map<String, TsExpression> attributes) {
@@ -178,10 +208,12 @@ public class HtmlGenerator {
             StringBuilder html = new StringBuilder();
 
             boolean childHasNgFor = element.getChildren().stream()
-                    .filter(c -> c instanceof ElementNode)
-                    .map(c -> (ElementNode) c)
-                    .flatMap(e -> e.getAttributes().stream())
-                    .anyMatch(attr -> attr instanceof NgForAttribute);
+                    .anyMatch(c -> c instanceof ElementNode e &&
+                            e.getAttributes().stream().anyMatch(a -> a instanceof NgForAttribute));
+
+            boolean childHasNgIf = element.getChildren().stream()
+                    .anyMatch(c -> c instanceof ElementNode e &&
+                            e.getAttributes().stream().anyMatch(a -> a instanceof NgIfAttribute));
 
             html.append("<").append(element.getTagName());
 
@@ -191,17 +223,95 @@ public class HtmlGenerator {
                     String value = standard.getValue();
 
                     if ("routerLink".equals(name)) {
-                        // routerLink="/products" → lookup in routerTable
                         String route = value.startsWith("/") ? value.substring(1) : value;
                         Set<String> components = routerTable.getRoutes().get(route);
                         if (components != null && !components.isEmpty()) {
-                            // Use the first component name from the set
                             String component = components.iterator().next();
                             html.append(" href=\"").append(component).append(".html\"");
                         }
                     } else if ("routerLinkActive".equals(name)) {
-                        // skip routerLinkActive completely
-                        continue;
+                        continue; // skip
+                    } else {
+                        html.append(" ").append(name)
+                                .append("=\"").append(value).append("\"");
+                    }
+                }
+                // ✅ Handle Angular Event Binding
+                else if (attr instanceof AngularEventBinding eventBinding) {
+                    String eventName = eventBinding.getEvent();    // e.g., "click"
+                    String handler = eventBinding.getHandler();    // e.g., "goBack()"
+                    html.append(" on").append(eventName)
+                            .append("=\"").append(handler).append("\"");
+                }
+            }
+
+            if (childHasNgFor) {
+                ngforParentId = "ngfor-parent-" + new Random().nextInt(500);
+                html.append(" id=\"").append(ngforParentId).append("\"");
+            }
+            if (childHasNgIf) {
+                ngifParentId = "ngif-parent-" + new Random().nextInt(500);
+                html.append(" id=\"").append(ngifParentId).append("\"");
+            }
+
+            html.append(">");
+
+            for (Node child : element.getChildren()) {
+                if (child instanceof ElementNode e) {
+                    if (e.getAttributes().stream().anyMatch(a -> a instanceof NgForAttribute)) {
+                        ngForElements.add(e);
+                        continue; // skip ngFor element
+                    }
+                    if (e.getAttributes().stream().anyMatch(a -> a instanceof NgIfAttribute)) {
+                        ngIfElements.add(e);
+                        continue; // skip ngIf element
+                    }
+                }
+                html.append(generateHtmlFromNode(child, attributes));
+            }
+
+            html.append("</").append(element.getTagName()).append(">");
+            return html.toString();
+        }
+        return "";
+    }
+
+
+/*
+    private String generateHtmlFromNode(Node node, Map<String, TsExpression> attributes) {
+        if (node instanceof TextNode textNode) {
+            return textNode.getText();
+        } else if (node instanceof InterpolationNode interpolation) {
+            String exprName = interpolation.getExpression();
+            TsExpression value = attributes.get(exprName);
+            return value != null ? value.toString() : "{{" + exprName + "}}";
+        } else if (node instanceof ElementNode element) {
+            StringBuilder html = new StringBuilder();
+
+            boolean childHasNgFor = element.getChildren().stream()
+                    .anyMatch(c -> c instanceof ElementNode e &&
+                            e.getAttributes().stream().anyMatch(a -> a instanceof NgForAttribute));
+
+            boolean childHasNgIf = element.getChildren().stream()
+                    .anyMatch(c -> c instanceof ElementNode e &&
+                            e.getAttributes().stream().anyMatch(a -> a instanceof NgIfAttribute));
+
+            html.append("<").append(element.getTagName());
+
+            for (HtmlAttribute attr : element.getAttributes()) {
+                if (attr instanceof StandardAttribute standard) {
+                    String name = standard.getName();
+                    String value = standard.getValue();
+
+                    if ("routerLink".equals(name)) {
+                        String route = value.startsWith("/") ? value.substring(1) : value;
+                        Set<String> components = routerTable.getRoutes().get(route);
+                        if (components != null && !components.isEmpty()) {
+                            String component = components.iterator().next();
+                            html.append(" href=\"").append(component).append(".html\"");
+                        }
+                    } else if ("routerLinkActive".equals(name)) {
+                        continue; // skip
                     } else {
                         html.append(" ").append(name)
                                 .append("=\"").append(value).append("\"");
@@ -213,13 +323,23 @@ public class HtmlGenerator {
                 ngforParentId = "ngfor-parent-" + new Random().nextInt(500);
                 html.append(" id=\"").append(ngforParentId).append("\"");
             }
+            if (childHasNgIf) {
+                ngifParentId = "ngif-parent-" + new Random().nextInt(500);
+                html.append(" id=\"").append(ngifParentId).append("\"");
+            }
 
             html.append(">");
 
             for (Node child : element.getChildren()) {
-                if (child instanceof ElementNode e && e.getAttributes().stream().anyMatch(a -> a instanceof NgForAttribute)) {
-                    ngForElements.add(e);
-                    continue;
+                if (child instanceof ElementNode e) {
+                    if (e.getAttributes().stream().anyMatch(a -> a instanceof NgForAttribute)) {
+                        ngForElements.add(e);
+                        continue; // skip ngFor element
+                    }
+                    if (e.getAttributes().stream().anyMatch(a -> a instanceof NgIfAttribute)) {
+                        ngIfElements.add(e);
+                        continue; // skip ngIf element
+                    }
                 }
                 html.append(generateHtmlFromNode(child, attributes));
             }
@@ -229,7 +349,10 @@ public class HtmlGenerator {
         }
         return "";
     }
+*/
 
+
+    String nameOfGot;
 
     private String generateGetFunctions(Map<String, List<Map<String, TsExpression>>> objects) {
         StringBuilder js = new StringBuilder();
@@ -242,8 +365,11 @@ public class HtmlGenerator {
 
             List<Map<String, TsExpression>> items = entry.getValue();
 
-//            js.append("function get").append(key).append("() {\n");
-            js.append("function get").append(capitalize(key)).append("() {\n");
+            // --------------------
+            // Plural getter
+            // --------------------
+            String pluralFuncName = "get" + capitalize(key);
+            js.append("function ").append(pluralFuncName).append("() {\n");
             js.append("  return JSON.parse(localStorage.getItem(\"").append(key).append("\")) || [\n");
 
             for (int i = 0; i < items.size(); i++) {
@@ -261,6 +387,21 @@ public class HtmlGenerator {
             }
 
             js.append("  ];\n");
+            js.append("}\n");
+
+            // --------------------
+            // Singular getter
+            // --------------------
+            // Naive singularization: remove trailing 's' if present
+            String singular = key.endsWith("s") ? key.substring(0, key.length() - 1) : key;
+            String singularFuncName = "get" + capitalize(singular);
+            this.nameOfGot = capitalize(singular);
+            String itemVar = singular.substring(0, 1); // first letter (p for product, c for category...)
+
+            js.append("function ").append(singularFuncName).append("(id) {\n");
+            js.append("  return ").append(pluralFuncName)
+                    .append("().find(").append(itemVar)
+                    .append(" => ").append(itemVar).append(".id === id);\n");
             js.append("}\n\n");
         }
 
@@ -332,6 +473,7 @@ public class HtmlGenerator {
         return js.toString();
     }
 
+
     private String generateInnerHtmlForNgFor(ElementNode node, String itemVar) {
         StringBuilder html = new StringBuilder();
 
@@ -375,73 +517,115 @@ public class HtmlGenerator {
         return html.toString();
     }
 
+    Set<String> ngifIds = new HashSet<>();
 
-private String generateRoutingFunctions(ComponentFile file) {
-    StringBuilder js = new StringBuilder();
+    private String generateNgIfFunctions(List<ElementNode> ngIfElements) {
+        StringBuilder js = new StringBuilder();
 
-    for (TsStatement stmt : file.getTsCode().getStatements()) {
-        if (stmt instanceof Method method) {
-            List<TsStatement> bodyStatements = method.getBody().getStatements();
-            if (bodyStatements.isEmpty()) continue;
+        for (ElementNode ngIfElement : ngIfElements) {
+            NgIfAttribute ngIf = (NgIfAttribute) ngIfElement.getAttributes().stream()
+                    .filter(a -> a instanceof NgIfAttribute)
+                    .findFirst()
+                    .orElse(null);
+            if (ngIf == null) continue;
 
-            TsStatement first = bodyStatements.getFirst();
-            if (first instanceof ExprStatement exprStmt) {
-                TsExpression expr = exprStmt.getExpression();
+            String expr = ngIf.getExpression(); // e.g. "product" or "!product"
 
-                // Only care about this.router.navigate([...])
-                String exprText = expr.toString();
-                if (exprText.startsWith("this.router.navigate")) {
+            if (!ngifIds.contains(ngifParentId)) {
 
-                    // Extract route from the navigate call
-                    String inside = exprText.substring(exprText.indexOf("[") + 1, exprText.lastIndexOf("]"));
-                    String[] parts = inside.split(",");
-                    String route = parts[0].replace("\"", "").replace("'", "").trim();
-                    String paramVar = parts.length > 1 ? parts[1].trim() : null;
+                js.append("const ").append(expr).append(" = ").append("get").append(nameOfGot).append("(id);\n");
+                js.append("  const parent = document.getElementById(\"").append(ngifParentId).append("\");\n");
+                js.append("  parent.innerHTML = \"\";\n");
+                ngifIds.add(ngifParentId);
+            }
+            js.append("  if (").append(expr).append(") {\n");
+            String innerHtml = generateInnerHtmlForNgFor(ngIfElement, expr.replace("!", "").trim());
+            js.append("    parent.innerHTML = `").append(innerHtml).append("`;\n");
+            js.append("  }\n");
+        }
 
-                    // Remove leading slash
-                    route = route.startsWith("/") ? route.substring(1) : route;
+        return js.toString();
+    }
 
-                    // Try both: exact route and route + "/:id"
-                    String matchedRoute = null;
-                    if (routerTable.getRoutes().containsKey(route)) {
-                        matchedRoute = route;
-                    } else if (routerTable.getRoutes().containsKey(route + "/:id")) {
-                        matchedRoute = route + "/:id";
+    private String generateRoutingFunctions(ComponentFile file) {
+        StringBuilder js = new StringBuilder();
+
+        for (TsStatement stmt : file.getTsCode().getStatements()) {
+            if (stmt instanceof Method method) {
+                List<TsStatement> bodyStatements = method.getBody().getStatements();
+                if (bodyStatements.isEmpty()) continue;
+
+                TsStatement first = bodyStatements.getFirst();
+                if (first instanceof ExprStatement exprStmt) {
+                    TsExpression expr = exprStmt.getExpression();
+
+                    // Only care about this.router.navigate([...])
+                    String exprText = expr.toString();
+                    if (exprText.startsWith("this.router.navigate")) {
+
+                        // Extract route from the navigate call
+                        String inside = exprText.substring(exprText.indexOf("[") + 1, exprText.lastIndexOf("]"));
+                        String[] parts = inside.split(",");
+                        String route = parts[0].replace("\"", "").replace("'", "").trim();
+                        String paramVar = parts.length > 1 ? parts[1].trim() : null;
+
+                        // Remove leading slash
+                        route = route.startsWith("/") ? route.substring(1) : route;
+
+                        // Try both: exact route and route + "/:id"
+                        String matchedRoute = null;
+                        if (routerTable.getRoutes().containsKey(route)) {
+                            matchedRoute = route;
+                        } else if (routerTable.getRoutes().containsKey(route + "/:id")) {
+                            matchedRoute = route + "/:id";
+                        }
+
+                        if (matchedRoute == null) continue;
+
+                        Set<String> comps = routerTable.getRoutes().get(matchedRoute);
+                        if (comps == null || comps.isEmpty()) continue;
+
+                        String targetComponent = comps.iterator().next() + ".html";
+
+                        // Generate JS function
+                        js.append("function ").append(method.getName()).append("(");
+                        if (!method.getParameters().isEmpty()) {
+                            js.append(method.getParameters().get(0).getName());
+                        }
+                        js.append(") {\n");
+
+                        if (paramVar != null) {
+                            js.append("  window.location.href = \"")
+                                    .append(targetComponent)
+                                    .append("?id=\" + ").append(paramVar).append(";\n");
+                        } else {
+                            js.append("  window.location.href = \"")
+                                    .append(targetComponent).append("\";\n");
+                        }
+
+                        js.append("}\n\n");
                     }
-
-                    if (matchedRoute == null) continue;
-
-                    Set<String> comps = routerTable.getRoutes().get(matchedRoute);
-                    if (comps == null || comps.isEmpty()) continue;
-
-                    String targetComponent = comps.iterator().next() + ".html";
-
-                    // Generate JS function
-                    js.append("function ").append(method.getName()).append("(");
-                    if (!method.getParameters().isEmpty()) {
-                        js.append(method.getParameters().get(0).getName());
-                    }
-                    js.append(") {\n");
-
-                    if (paramVar != null) {
-                        js.append("  window.location.href = \"")
-                                .append(targetComponent)
-                                .append("?id=\" + ").append(paramVar).append(";\n");
-                    } else {
-                        js.append("  window.location.href = \"")
-                                .append(targetComponent).append("\";\n");
-                    }
-
-                    js.append("}\n\n");
                 }
             }
         }
+
+        return js.toString();
     }
 
-    return js.toString();
-}
 
-
+    private boolean isIdRoutedComponent(String className) {
+        for (Map.Entry<String, Set<String>> entry : routerTable.getRoutes().entrySet()) {
+            String path = entry.getKey();
+            if (path.contains("/:id")) {
+                for (String comp : entry.getValue()) {
+                    if (comp.equals(className)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
     private String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
@@ -468,7 +652,6 @@ private String generateRoutingFunctions(ComponentFile file) {
 
         return attributeMap;
     }
-
 
     private Map<String, List<Map<String, TsExpression>>> extractObjectArrays() {
         Map<String, List<Map<String, TsExpression>>> result = new LinkedHashMap<>();
@@ -510,6 +693,41 @@ private String generateRoutingFunctions(ComponentFile file) {
         }
 
         return result;
+    }
+
+    private String generateNgIfScript(List<ElementNode> ngIfElements, String ngifParentId) {
+        if (ngIfElements.isEmpty()) return ""; // No ngIf elements, nothing to generate
+
+        StringBuilder js = new StringBuilder();
+
+        for (ElementNode ngIfElement : ngIfElements) {
+            NgIfAttribute ngIf = (NgIfAttribute) ngIfElement.getAttributes().stream()
+                    .filter(a -> a instanceof NgIfAttribute)
+                    .map(a -> (NgIfAttribute) a)
+                    .findFirst()
+                    .orElse(null);
+
+            if (ngIf == null) continue;
+
+            String condition = ngIf.getExpression().trim(); // e.g., "product"
+            String varName = condition.replace("!", "").trim(); // remove possible negation
+
+            // Generate JS
+            js.append("const ").append(varName).append(" = get")
+                    .append(capitalize(varName)).append("(id);\n");
+            js.append("const container = document.getElementById(\"").append(ngifParentId).append("\");\n");
+            js.append("if (").append(varName).append(") {\n");
+            js.append("  container.innerHTML = `");
+
+            // Generate inner HTML of the ngIf element using your existing method
+            String innerHtml = generateInnerHtmlForNgFor(ngIfElement, varName);
+            js.append(innerHtml.replace("`", "\\`")); // escape backticks
+
+            js.append("`;\n");
+            js.append("}\n\n");
+        }
+
+        return js.toString();
     }
 
 

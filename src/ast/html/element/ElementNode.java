@@ -21,6 +21,8 @@ public class ElementNode extends Node {
         this.selfClosing = false;
     }
 
+
+
     public void addAttribute(HtmlAttribute attr) {
         attributes.add(attr);
     }

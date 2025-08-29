@@ -9,6 +9,10 @@ public class NgIfAttribute extends HtmlAttribute {
         this.expression = expression;
     }
 
+    public String getExpression() {
+        return expression;
+    }
+
     @Override
     public String toString() {
         return "*ngIf=\"" + expression + "\"";
