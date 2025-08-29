@@ -674,7 +674,7 @@ import { ProductService } from '../product.service';
 
       `],
   template: `
-    <div class="edit-product">
+    <div class="add-product">
       <button class="btn-back" (click)="goBack()"> Back to Products</button>
       <h2>Edit Product</h2>
 

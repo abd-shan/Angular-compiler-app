@@ -36,7 +36,6 @@ angularApp
     ;
 
 // ==================== state file ====================
-//done
 stateFile
   : importStatement*
     (stateInterface | stateVariable | stateAction | stateReducer | stateServiceClass)+
