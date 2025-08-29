@@ -43,7 +43,7 @@ public class Main {
 		tAnalyzer.analyze();
 		TypeScriptSemanticAnalyzer  tsAnalyzer = new TypeScriptSemanticAnalyzer(tsTable);
 		tsAnalyzer.analyze();
-
+		//merge errors
 		List<String> errors = new java.util.ArrayList<>(tsAnalyzer.getErrors());
 		errors.addAll(tAnalyzer.getErrors());
 
