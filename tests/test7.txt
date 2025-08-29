@@ -398,99 +398,124 @@ export class ProductDetailComponent implements OnInit {
 }
 
 
-
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { ProductService } from '../product.service';
 
 @Component({
-  selector: 'app-add-edit-product',
+  selector: 'app-add-product',
   standalone: true,
   imports: [CommonModule, FormsModule],
+   styles: [`
+      .add-product {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        font-family: Arial, sans-serif;
+      }
 
-  styles: [`
-    .add-edit-product {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
+      .edit-product h2 {
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 1.5rem;
+        color: #333;
+      }
 
-    .btn-back {
-      background: #6c757d;
-      color: white;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
+      .btn-back {
+        background: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        cursor: pointer;
+        display: inline-block;
+      }
 
-    .product-form {
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
+      .form-group {
+        margin-bottom: 20px;
+      }
 
-    .form-group {
-      margin-bottom: 15px;
-    }
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #333;
+      }
 
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
 
-    .form-group textarea {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
+      .form-group .input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
 
-    .form-group textarea {
-      height: 100px;
-      resize: vertical;
-    }
+        }
+      .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
 
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
+      }
 
-    .form-actions button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
 
-    .form-actions button {
-      background: #007bff;
-      color: white;
-    }
+     .form-group textarea {
+        height: 100px;
+        resize: vertical;
+      }
 
-    .btn-cancel {
-      background: #6c757d;
-      color: white;
-    }
-  `],
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .btn-primary {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+
+      }
+
+
+
+      .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+
+      }
+
+
+    `],
   template: `
-    <div class="add-edit-product">
+    <div class="add-product">
       <button class="btn-back" (click)="goBack()"> Back to Products</button>
+      <h2>Add New Product</h2>
 
-      <h2>{{ isEditMode ? 'Edit Product' : 'Add New Product' }}</h2>
-
-      <form class="product-form" (submit)="isEditMode ? updateProduct() : addProduct(); $event.preventDefault()">
+      <form (submit)="addProduct(); $event.preventDefault()">
         <div class="form-group">
           <label for="name">Product Name</label>
-          <input type="text" id="name" [(ngModel)]="product.name" name="name" required>
+          <input class="input" type="text" id="name" [(ngModel)]="product.name" name="name" required>
         </div>
 
         <div class="form-group">
@@ -500,7 +525,7 @@ import { ProductService } from '../product.service';
 
         <div class="form-group">
           <label for="image">Image URL</label>
-          <input type="text" id="image" [(ngModel)]="product.image" name="image" required>
+          <input class="input" type="text" id="image" [(ngModel)]="product.image" name="image" required>
         </div>
 
         <div class="form-group">
@@ -509,25 +534,183 @@ import { ProductService } from '../product.service';
         </div>
 
         <div class="form-actions">
-          <button type="submit">{{ isEditMode ? 'Update' : 'Add' }} Product</button>
+          <button type="submit" class="btn-primary">Add Product</button>
           <button type="button" class="btn-cancel" (click)="goBack()">Cancel</button>
         </div>
       </form>
     </div>
   `,
+
 })
+export class AddProductComponent {
+  product = { name: '', description: '', image: '', price: 0 };
+
+  constructor(private productService: ProductService, private router: Router) {}
+
+  addProduct() {
+    if (this.product.name && this.product.description && this.product.image && this.product.price) {
+      this.productService.addProduct( this.product);
+      this.goBack();
+    }
+  }
+
+  goBack() {
+    this.router.navigate(['/products']);
+  }
+}
 
 
-export class AddEditProductComponent implements OnInit {
-  product: any = {
-    name: '',
-    description: '',
-    image: '',
-    price: 0
-  };
 
-  isEditMode = false;
-  productId: number | null   = null;
+
+
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ProductService } from '../product.service';
+
+@Component({
+  selector: 'app-edit-product',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  styles: [`
+        .add-product {
+          max-width: 600px;
+          margin: auto;
+          padding: 20px;
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+          font-family: Arial, sans-serif;
+        }
+
+        .edit-product h2 {
+          margin-bottom: 20px;
+          text-align: center;
+          font-size: 1.5rem;
+          color: #333;
+        }
+
+        .btn-back {
+          background: #6c757d;
+          color: white;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          margin-bottom: 20px;
+          cursor: pointer;
+          display: inline-block;
+        }
+
+        .form-group {
+          margin-bottom: 20px;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: bold;
+          color: #333;
+        }
+
+
+        .form-group .input {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+
+          }
+        .form-group textarea {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+
+        }
+
+
+       .form-group textarea {
+          height: 100px;
+          resize: vertical;
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-top: 20px;
+        }
+
+        .btn-primary {
+          background: #007bff;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+
+        }
+
+
+
+        .btn-cancel {
+          background: #6c757d;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+
+        }
+
+
+      `],
+  template: `
+    <div class="edit-product">
+      <button class="btn-back" (click)="goBack()"> Back to Products</button>
+      <h2>Edit Product</h2>
+
+      <form (submit)="updateProduct(); $event.preventDefault()">
+        <div class="form-group">
+          <label for="name">Product Name</label>
+          <input class="input" type="text" id="name" [(ngModel)]="product.name" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" [(ngModel)]="product.description" name="description" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="image">Image URL</label>
+          <input class="input" type="text" id="image" [(ngModel)]="product.image" name="image" required>
+        </div>
+
+        <div class="form-group">
+          <label for="price">Price SAR</label>
+          <input type="number" id="price" [(ngModel)]="product.price" name="price" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Update Product</button>
+          <button type="button" class="btn-cancel" (click)="goBack()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  `,
+
+})
+export class EditProductComponent implements OnInit {
+  product = { name: '', description: '', image: '', price: 0 };
+  productId: number | null = null;
 
   constructor(
     private productService: ProductService,
@@ -537,29 +720,19 @@ export class AddEditProductComponent implements OnInit {
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
-
     if ( id) {
-      this.isEditMode = true;
       this.productId = Number( id);
       const existingProduct = this.productService.getProduct( this.productId);
-
       if ( existingProduct) {
         this.product = { ...existingProduct };
       }
     }
   }
 
-  addProduct() {
-    if (this.product.name && this.product.description && this.product.image && this.product.price) {
-      this.productService.addProduct( this.product);
-      this.goBack();
-    }
-  }
-
   updateProduct() {
     if (this.productId && this.product.name && this.product.description && this.product.image && this.product.price) {
       const updatedProduct = { ...this.product, id: this.productId };
-      this.productService.updateProduct(  updatedProduct);
+      this.productService.updateProduct( updatedProduct);
       this.goBack();
     }
   }
@@ -568,6 +741,9 @@ export class AddEditProductComponent implements OnInit {
     this.router.navigate(['/products']);
   }
 }
+
+
+
 
 
 import { Routes } from '@angular/router';
