@@ -1,5 +1,9 @@
 package symbolTable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 public class SymbolTable {
     private Scope currentScope;
 
@@ -33,14 +37,6 @@ public class SymbolTable {
         return currentScope;
     }
 
-    // Helper method to get line/column from ANTLR context
-    public static int getLineFromContext(org.antlr.v4.runtime.ParserRuleContext ctx) {
-        return ctx != null && ctx.start != null ? ctx.start.getLine() : -1;
-    }
-
-    public static int getColumnFromContext(org.antlr.v4.runtime.ParserRuleContext ctx) {
-        return ctx != null && ctx.start != null ? ctx.start.getCharPositionInLine() : -1;
-    }
 
     private static String buildScopePath(Scope scope) {
         if (scope == null) return "";
@@ -56,19 +52,21 @@ public class SymbolTable {
         out.append(scope.getName());
     }
 
-    private static void collectRows(java.util.List<String[]> rows, Scope scope) {
+    private static void collectRows(List<String[]> rows, Scope scope) {
         if (scope == null) return;
         String path = buildScopePath(scope);
-        java.util.Map<String, Symbol> symbols = scope.getSymbols();
+        Map<String, Symbol> symbols = scope.getSymbols();
+
         if (symbols.isEmpty()) {
-            rows.add(new String[] { path, "", ""});
+            rows.add(new String[] { path, "", "", "", "" });
         } else {
             for (Symbol sym : symbols.values()) {
                 rows.add(new String[] {
                         path,
                         sym.getName(),
                         sym.getType(),
-
+                        sym.getLine() != -1 ? String.valueOf(sym.getLine()) : "",
+                        sym.getColumn() != -1 ? String.valueOf(sym.getColumn()) : ""
                 });
             }
         }
@@ -77,11 +75,13 @@ public class SymbolTable {
         }
     }
 
-    private static int[] computeColumnWidths(java.util.List<String[]> rows) {
-        int[] widths = new int[] { "Scope".length(), "Name".length(), "Type".length() };
+    private static int[] computeColumnWidths(List<String[]> rows) {
+        int[] widths = new int[] { "Scope".length(), "Name".length(), "Type".length(), "Line".length(), "Column".length() };
         for (String[] r : rows) {
             for (int i = 0; i < r.length; i++) {
-                if (r[i] != null) widths[i] = Math.max(widths[i], r[i].length());
+                if (r[i] != null) {
+                    widths[i] = Math.max(widths[i], r[i].length());
+                }
             }
         }
         return widths;
@@ -122,16 +122,16 @@ public class SymbolTable {
         }
         if (root == null) return "(empty symbol table)";
 
-        java.util.List<String[]> rows = new java.util.ArrayList<>();
+        List<String[]> rows = new ArrayList<>();
         collectRows(rows, root);
         int[] widths = computeColumnWidths(rows);
 
         StringBuilder sb = new StringBuilder();
         appendSeparator(sb, widths);
-        appendRow(sb, widths, "Scope", "Name", "Type" );
+        appendRow(sb, widths, "Scope", "Name", "Type", "Line", "Column");
         appendSeparator(sb, widths);
         for (String[] r : rows) {
-            appendRow(sb, widths, r[0], r[1], r[2] );
+            appendRow(sb, widths, r[0], r[1], r[2], r[3], r[4]);
         }
         appendSeparator(sb, widths);
         return sb.toString();

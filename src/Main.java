@@ -5,7 +5,8 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import ast.program.AngularApp;
-import semantic.SemanticAnalyzer;
+import semantic.TemplateSemanticAnalyzer;
+import semantic.TypeScriptSemanticAnalyzer;
 import visitors.AngularVisitor;
 import java.io.IOException;
 import java.util.List;
@@ -38,10 +39,15 @@ public class Main {
 		var routerTable = visitor.getRouterSymbolTable();
 
 		// run semantic analyzer
-		SemanticAnalyzer analyzer = new SemanticAnalyzer(tsTable, templateTable);
-		analyzer.analyze();
+		TemplateSemanticAnalyzer tAnalyzer = new TemplateSemanticAnalyzer(tsTable, templateTable);
+		tAnalyzer.analyze();
+		TypeScriptSemanticAnalyzer  tsAnalyzer = new TypeScriptSemanticAnalyzer(tsTable);
+		tsAnalyzer.analyze();
+		//merge errors
+		List<String> errors = new java.util.ArrayList<>(tsAnalyzer.getErrors());
+		errors.addAll(tAnalyzer.getErrors());
 
-		List<String> errors = analyzer.getErrors();
+
 		System.out.println("\n\n\n======================== SEMANTIC CHECK ========================\n\n\n");
 		if (errors.isEmpty()) {
 			System.out.println("No semantic errors found ^_^");

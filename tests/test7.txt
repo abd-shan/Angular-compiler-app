@@ -118,7 +118,7 @@ export class ProductService {
       ...product,
       id: this.generateId()
     };
-    this.products.next([...currentProducts, newProduct]);
+    this.producjjjts.next([...currentProducts, newProduct]);
   }
 
   updateProduct(updatedProduct: Product) {
@@ -249,6 +249,7 @@ import { ProductService } from '../product.service';
       </div>
     `,
 })
+
 export class ProductListComponent implements OnInit {
   products: any[] = [];
 

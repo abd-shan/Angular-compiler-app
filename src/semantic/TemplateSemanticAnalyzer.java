@@ -7,13 +7,14 @@ import symbolTable.SymbolTable;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+// all commit are written by abd-shan.
 
-public class SemanticAnalyzer {
+public class TemplateSemanticAnalyzer {
     private final SymbolTable tsTable;
     private final SymbolTable templateTable;
     private final List<String> errors = new ArrayList<>();
 
-    public SemanticAnalyzer(SymbolTable tsTable, SymbolTable templateTable) {
+    public TemplateSemanticAnalyzer(SymbolTable tsTable, SymbolTable templateTable) {
         this.tsTable = tsTable;
         this.templateTable = templateTable;
     }
