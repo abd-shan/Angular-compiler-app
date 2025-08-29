@@ -9,6 +9,11 @@ public class NgForAttribute extends HtmlAttribute {
         this.expression = expression;
     }
 
+
+    public String getExpression() {
+        return expression;
+    }
+
     @Override
     public String toString() {
         return "*ngFor=\"" + expression + "\"";

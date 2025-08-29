@@ -33,6 +33,22 @@ public class ElementNode extends Node {
         this.selfClosing = selfClosing;
     }
 
+    public String getTagName() {
+        return tagName;
+    }
+
+    public List<HtmlAttribute> getAttributes() {
+        return attributes;
+    }
+
+    public List<Node> getChildren() {
+        return children;
+    }
+
+    public boolean isSelfClosing() {
+        return selfClosing;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
