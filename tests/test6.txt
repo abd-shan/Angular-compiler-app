@@ -111,9 +111,16 @@ export class AnimalService {
     {
       id: 3,
       name: 'Penguin',
-      photo: 'https://images.pexels.com/photos/416035/pexels-photo-416035.jpeg',
+      photo: 'https://i.ytimg.com/vi/GfSZtaoc5bw/maxresdefault.jpg',
       age: 3,
       birthPlace: 'Antarctica'
+    },
+    {
+      id: 4,
+      name: 'Panda',
+      photo: 'https://img1.wsimg.com/isteam/ip/39dcbcd6-8e00-4f76-964e-25a7ffc55cdf/Kung%20Fu%20Panda.jpg',
+      age: 22,
+      birthPlace: 'China'
     }
   ]);
 

@@ -20,7 +20,7 @@ public class Main {
 
 	public static void main(String[] args) throws IOException {
 
-		String source = "tests/test6.txt";
+		String source = "tests/test7.txt";
 		CharStream cs = fromFileName(source);
 		AngularLexer lexer = new AngularLexer(cs);
 		CommonTokenStream token = new CommonTokenStream(lexer);
