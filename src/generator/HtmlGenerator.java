@@ -7,7 +7,7 @@ import ast.html.element.ElementNode;
 import ast.html.element.InterpolationNode;
 import ast.html.element.TextNode;
 import ast.html.attribute.*;
-import ast.program.StateFile;
+import ast.state.StateInterfaceProperty;
 import ast.state.StateServiceClass;
 import ast.ts.expressions.*;
 import ast.ts.statements.DeclareAndAssignAttribute;
@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 
 public class HtmlGenerator {
@@ -33,12 +32,18 @@ public class HtmlGenerator {
     AngularApp angularApp;
     RouterSymbolTable routerTable;
     StateServiceClass serviceClass;
+    ArrayList<String> interfaceNames;
 
     public HtmlGenerator(AngularApp angularApp, RouterSymbolTable routerTable) {
         this.angularApp = angularApp;
         this.routerTable = routerTable;
         data = extractObjectArrays();
         serviceClass = angularApp.getStateFiles().getFirst().getServiceClasses().getFirst();
+        List<StateInterfaceProperty> serviceInterface = angularApp.getStateFiles().getFirst().getInterfaces().getFirst().getProperties();
+        interfaceNames = new ArrayList<>();
+        for (StateInterfaceProperty serviceInterfaceProperty : serviceInterface) {
+            interfaceNames.add(serviceInterfaceProperty.getName());
+        }
 
         List<ComponentFile> files = angularApp.getComponentFiles();
         ensureOutputDir();
@@ -666,6 +671,123 @@ public class HtmlGenerator {
         for (TsStatement stmt : statements) {
             if (stmt instanceof Method method) {
                 String methodBody = method.getBody().toString();
+                String methodName = method.getName();
+
+//                 Check if method name contains 'add' or 'update'
+                if (methodName.contains("add") || methodName.contains("update")) {
+                    js.append("function ").append(methodName).append("() {\n"); // No parameters
+
+                    String varName = method.getParameters().getFirst().getName();
+                    String declare;
+
+                    declare = "const " + varName + "={";
+
+                    if (methodName.contains("update")) {
+                        declare += "id:id,";
+                    }
+                    for (String interfaceName : interfaceNames) {
+                        if (interfaceName.trim().equals("id"))//does not wok idk why
+                            continue;
+                        declare += interfaceName + ":" + "document.getElementById(\"" + interfaceName + "\").value,\n";
+                    }
+                    declare += "}";
+
+                    js.append(declare);
+
+                } else {
+                    js.append("function ").append(methodName).append("(");
+
+                    List<MethodParam> params = method.getParameters();
+                    for (int i = 0; i < params.size(); i++) {
+                        MethodParam param = params.get(i);
+                        js.append(param.getName());
+                        if (i < params.size() - 1) {
+                            js.append(", ");
+                        }
+                    }
+
+                    js.append(") {\n");
+                }
+
+                String body = methodBody.trim();
+                String[] lines = body.split("\n");
+
+                String toUpdate = "";
+                String attribute = "";
+
+                boolean ok = true;
+                boolean fixed = false;
+
+                for (String line : lines) {
+                    if (line.contains("this.") && line.contains(".value")) {
+                        String variable = line.substring(line.indexOf("this.") + 5, line.indexOf(".value"));
+                        toUpdate = variable;
+                        attribute = variable;
+                        line = line.replace("this." + variable + ".value", "get" + capitalize(variable) + "()");
+                    }
+
+                    if (line.contains("{:")) {
+                        line = line.replace("{:", "{");
+                    }
+
+                    if (line.contains("this.") && line.contains(".next([")) {
+                        String variable = line.substring(line.indexOf("this.") + 5, line.indexOf(".next("));
+
+                        int argsStart = line.indexOf("[") + 1;
+                        int argsEnd = line.indexOf("]");
+                        String args = line.substring(argsStart, argsEnd);
+
+                        String[] argsArray = args.split(",");
+                        fixed = true;
+                        if (argsArray.length == 1) {
+                            continue;
+                        }
+                        String secondArg = argsArray.length > 1 ? argsArray[1].trim() : "";
+
+                        line = line.replace("this." + variable + ".next([" + args + "])", variable + ".push(" + secondArg + ")");
+                    }
+                    if (line.contains("this.") && line.contains(".next(")) {
+                        int start = line.indexOf("this.") + 5;
+                        int end = line.indexOf(".next(");
+                        String variable = line.substring(start, end);
+
+                        int argStart = line.indexOf("(", end) + 1;
+                        int argEnd = line.lastIndexOf(")");
+                        String argument = line.substring(argStart, argEnd).trim();
+
+                        line = "const updated" + capitalize(variable) + " = " + argument;
+                        toUpdate = "updated" + capitalize(variable);
+                        fixed = true;
+                    }
+                    if (line.contains("this.") && line.contains("{") && line.contains("id: this.")) {
+
+
+                        line=line.replace("{", "{...");
+                        line=line.replace("id: this.","id:");
+                    }
+
+                    js.append(line).append("\n");
+                }
+
+                if (ok && fixed) {
+                    js.append("  localStorage.setItem(\"").append(attribute).append("\", JSON.stringify(").append(toUpdate).append("));\n");
+                }
+
+                js.append("}\n");
+            }
+        }
+        return js.toString();
+    }
+
+/*
+    private String generateServiceFunctions() {
+        StringBuilder js = new StringBuilder();
+
+        List<TsStatement> statements = serviceClass.getTsCode().getStatements();
+
+        for (TsStatement stmt : statements) {
+            if (stmt instanceof Method method) {
+                String methodBody = method.getBody().toString();
                 if (!methodBody.contains("this")) {
                     js.append("function ").append(method.getName()).append("(");
 
@@ -694,7 +816,6 @@ public class HtmlGenerator {
 
                     js.append("function ").append(method.getName()).append("(");
 
-                    // Add parameters
                     List<MethodParam> params = method.getParameters();
                     for (int i = 0; i < params.size(); i++) {
                         MethodParam param = params.get(i);
@@ -718,7 +839,6 @@ public class HtmlGenerator {
                     boolean fixed = false;
 
                     for (String line : lines) {
-                        // Case 1: Replace "this.xxxxx.value" with "getXxxxx()"
                         if (line.contains("this.") && line.contains(".value")) {
                             String variable = line.substring(line.indexOf("this.") + 5, line.indexOf(".value"));
                             toUpdate = variable;
@@ -726,7 +846,6 @@ public class HtmlGenerator {
                             line = line.replace("this." + variable + ".value", "get" + capitalize(variable) + "()");
                         }
 
-                        // Case 2: Replace "{:" with "{"
                         if (line.contains("{:")) {
                             line = line.replace("{:", "{");
                         }
@@ -756,7 +875,6 @@ public class HtmlGenerator {
                             int argEnd = line.lastIndexOf(")");
                             String argument = line.substring(argStart, argEnd).trim();
 
-                            // Replace the line with the new JS assignment
                             line = "const updated" + capitalize(variable) + " = " + argument;
                             toUpdate = "updated" + capitalize(variable);
                             fixed = true;
@@ -770,207 +888,11 @@ public class HtmlGenerator {
                     }
                     js.append("}\n");
                 }
-
-
             }
         }
-
-        return js.toString();
-    }
-
-/*
-    private String generateServiceFunctions() {
-        StringBuilder js = new StringBuilder();
-
-        List<TsStatement> statements = serviceClass.getTsCode().getStatements();
-
-        boolean last = false;
-        int methodCount = 0;
-        int methodIndex = 0;
-
-        // First, count how many methods are in the service class
-        for (TsStatement stmt : statements) {
-            if (stmt instanceof Method) {
-                methodCount++;
-            }
-        }
-
-        for (TsStatement stmt : statements) {
-            if (stmt instanceof Method method) {
-                methodIndex++;
-
-                // Check if method body contains 'this'
-                String methodBody = method.getBody().toString();
-                if (methodBody.contains("this")) {
-                    // Generate JavaScript function for methods containing 'this'
-                    js.append("function ").append(method.getName()).append("(");
-
-                    // Add parameters
-                    List<MethodParam> params = method.getParameters();
-                    for (int i = 0; i < params.size(); i++) {
-                        MethodParam param = params.get(i);
-                        js.append(param.getName());
-                        if (i < params.size() - 1) {
-                            js.append(", ");
-                        }
-                    }
-
-                    js.append(") {\n");
-
-                    // Process method body
-                    String body = methodBody.trim();
-                    String[] lines = body.split("\n");
-                    String firstConstName = extractFirstConstName(methodBody); // Extract first const from the method body
-
-                    boolean addedLocalStorage = false; // Flag to track if localStorage was already added in the method body
-
-                    // Process each line of the method body
-                    for (String line : lines) {
-                        if (line.contains("this.")) {
-                            // Replace this.xxx.value with getXxx() (fix case-sensitive issues)
-                            line = line.replaceAll("this\\.(\\w+)\\.value", "get$1()");
-
-                            // Replace this.methodName() with methodName()
-                            line = line.replaceAll("this\\.(\\w+)\\(\\)", "$1()");
-
-                            // Replace getproducts with getProducts (case-sensitive fix)
-                            line = line.replaceAll("getproducts", "getProducts");
-
-                            // Handle next([something]) case - replace with localStorage.setItem
-                            if (line.contains("this.") && line.contains("next([")) {
-                                // If it's a next([something]), replace it with localStorage.setItem
-                                line = line.replaceAll("this\\.(\\w+)\\.next\\(\\[.*?\\]\\);", "localStorage.setItem(\"$1\", JSON.stringify($1));");
-
-                                // After replacing, we flag that we've already added localStorage.setItem
-                                addedLocalStorage = true;
-                            }
-                        }
-
-                        // Add the processed line with indentation
-                        js.append("  ").append(line.trim()).append("\n");
-                    }
-
-                    // Add localStorage.setItem at the end of the function for the first const
-                    if (firstConstName != null && !addedLocalStorage && methodIndex != methodCount) {
-                        js.append("  localStorage.setItem(\"").append(firstConstName).append("\", JSON.stringify(").append(firstConstName).append("));\n");
-                    }
-
-                    js.append("}\n\n");
-                }
-            }
-        }
-
         return js.toString();
     }
 */
-
-/*
-  private String generateServiceFunctions() {
-        StringBuilder js = new StringBuilder();
-
-        List<TsStatement> statements = serviceClass.getTsCode().getStatements();
-
-        boolean last = false;
-        int methodCount = 0;
-        int methodIndex = 0;
-
-        // First, count how many methods are in the service class
-        for (TsStatement stmt : statements) {
-            if (stmt instanceof Method) {
-                methodCount++;
-            }
-        }
-
-        for (TsStatement stmt : statements) {
-            if (stmt instanceof Method method) {
-                methodIndex++;
-
-                // Check if method body contains 'this'
-                String methodBody = method.getBody().toString();
-                if (methodBody.contains("this")) {
-                    // Generate JavaScript function for methods containing 'this'
-                    js.append("function ").append(method.getName()).append("(");
-
-                    // Add parameters
-                    List<MethodParam> params = method.getParameters();
-                    for (int i = 0; i < params.size(); i++) {
-                        MethodParam param = params.get(i);
-                        js.append(param.getName());
-                        if (i < params.size() - 1) {
-                            js.append(", ");
-                        }
-                    }
-
-                    js.append(") {\n");
-
-                    // Process method body
-                    String body = methodBody.trim();
-                    String[] lines = body.split("\n");
-                    String firstConstName = extractFirstConstName(methodBody); // Extract first const from the method body
-
-                    boolean addedLocalStorage = false; // Flag to track if localStorage was already added in the method body
-
-                    // Process each line of the method body
-                    for (String line : lines) {
-                        if (line.contains("this.")) {
-                            // Replace this.xxx.value with getXxx() (fix case-sensitive issues)
-                            line = line.replaceAll("this\\.(\\w+)\\.value", "get$1()");
-
-                            // Replace this.methodName() with methodName()
-                            line = line.replaceAll("this\\.(\\w+)\\(\\)", "$1()");
-
-                            // Replace getproducts with getProducts (case-sensitive fix)
-                            line = line.replaceAll("getproducts", "getProducts");
-
-                            // Handle next([something]) case - replace with localStorage.setItem
-                            if (line.contains("this.") && line.contains("next([")) {
-                                // If it's a next([something]), replace it with localStorage.setItem
-                                line = line.replaceAll("this\\.(\\w+)\\.next\\(\\[.*?\\]\\);", "localStorage.setItem(\"$1\", JSON.stringify($1));");
-
-                                // After replacing, we flag that we've already added localStorage.setItem
-                                addedLocalStorage = true;
-                            }
-                        }
-
-                        // Handle deleteProduct case specifically: update the line and replace with localStorage logic
-                        if (line.contains("this.products.next") && !line.contains("[")) {
-                            line = line.replaceAll("this\\.products\\.next\\(.*\\)", "localStorage.setItem(\"products\", JSON.stringify(updatedProducts))");
-                            addedLocalStorage = true;
-                        }
-
-                        // Change {: to {
-                        line = line.replaceAll("\\{:\\s*", "{");
-
-                        // Add the processed line with indentation
-                        js.append("  ").append(line.trim()).append("\n");
-                    }
-
-                    // Add localStorage.setItem at the end of the function for the first const
-                    if (firstConstName != null && !addedLocalStorage && methodIndex != methodCount) {
-                        js.append("  localStorage.setItem(\"").append(firstConstName).append("\", JSON.stringify(").append(firstConstName).append("));\n");
-                    }
-
-                    js.append("}\n\n");
-                }
-            }
-        }
-
-        return js.toString();
-    }
-*/
-
-
-    private String extractFirstConstName(String methodBody) {
-        // Regex to match const declarations
-        Pattern pattern = Pattern.compile("const\\s+(\\w+)\\s*=.*");
-        Matcher matcher = pattern.matcher(methodBody);
-
-        if (matcher.find()) {
-            return matcher.group(1);  // Return the name of the first const
-        }
-
-        return null;  // Return null if no const found
-    }
 
 
 }
