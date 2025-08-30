@@ -1,88 +1,825 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule, RouterOutlet } from '@angular/router';
+
 @Component({
-
-  selector: "app-root",
+  selector: 'app-root',
   standalone: true,
-    import
+  imports: [CommonModule, RouterOutlet, RouterModule],
+  styles: [`
+    .app-container {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f0f8ff;
+    }
 
-  styles: [
-    `
-      .container {
-        display: flex;
-        margin: 0;
-        padding: 0;
-      }
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background-color: #2c5e1a;
+      color: white;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
 
-      #left {
-        width: 70%;
-        padding: 20px;
-        border-right: 2px solid #ccc;
-      }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
 
-      #right {
-        width: 30%;
-        padding: 20px;
-        overflow-y: auto;
-      }
+    .nav-links a {
+      text-decoration: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
 
-      .product {
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin: 10px 0;
-        cursor: pointer;
-      }
+    }
 
-      .product img {
-        width: 50px;
-        height: 50px;
-        margin-right: 10px;
-      }
+    .nav-links a {
+      background-color: #3e7c29;
+    }
 
-      .detailsBox img {
-        width: 200px;
-        height: 200px;
-      }
-    `
-  ],
+    .nav-links a.active{
+      background-color: #4caf50;
+    }
+
+    .main-content {
+      padding: 20px;
+    }
+  `],
   template: `
-    <div class="container">
-      <div id="left" class="detailsBox" *ngIf="selectedProduct">
-        <h2>{{ selectedProduct.name }}</h2>
-        <img [src]="selectedProduct.image">
-        <p>{{ selectedProduct.description }}</p>
-      </div>
+    <div class="app-container">
+      <nav class="navbar">
+        <h1>{{title}}</h1>
+        <div class="nav-links">
+          <a routerLink="/animals" routerLinkActive="active">Animals</a>
+          <a routerLink="/add" routerLinkActive="active">Add Animal</a>
+        </div>
+      </nav>
+
+      <main class="main-content">
+        <router-outlet></router-outlet>
+      </main>
     </div>
   `,
 })
-export class AppComponent {
-
-  products:any;
-  selectedProduct:any;
-
-
-  constructor() {
-    this.products = [
-      {
-        name: 'Product 1',
-        image: 'https://images.pexels.com/photos/4012470/pexels-photo-4012470.jpeg',
-        description: 'This is the description for product 1.'
-      },
-      {
-        name: 'Product 2',
-        image: 'https://images.pexels.com/photos/3764550/pexels-photo-3764550.jpeg',
-        description: 'This is the description for product 2.'
-      },
-      {
-        name: 'Product 3',
-        image: 'https://images.pexels.com/photos/3845492/pexels-photo-3845492.jpeg',
-        description: 'This is the description for product 3.'
-      }
-    ];
-
-  }
-
-  showDetails(product: any) {
-//    this.selectedProduct = product;
- let a : number= 15;
-  }
-
+export class App {
+  title = 'Zoo Animal Management';
 }
+
+
+
+
+
+
+
+
+import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
+
+export interface Animal {
+  id: number;
+  name: string;
+  photo: string;
+  age: number;
+  birthPlace: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AnimalService {
+  private animals = new BehaviorSubject<Animal[]>([
+    {
+      id: 1,
+      name: 'Lion',
+      photo: 'https://images.pexels.com/photos/247502/pexels-photo-247502.jpeg',
+      age: 5,
+      birthPlace: 'Africa'
+    },
+    {
+      id: 2,
+      name: 'Elephant',
+      photo: 'https://images.pexels.com/photos/1054655/pexels-photo-1054655.jpeg',
+      age: 15,
+      birthPlace: 'India'
+    },
+    {
+      id: 3,
+      name: 'Penguin',
+      photo: 'https://images.pexels.com/photos/416035/pexels-photo-416035.jpeg',
+      age: 3,
+      birthPlace: 'Antarctica'
+    }
+  ]);
+
+  animals$ = this.animals.asObservable();
+
+  addAnimal(animal: Omit<Animal, 'id'>) {
+      const animals = this.animals.value;
+      const newAnimal = {
+        ...animal,
+        id: this.generateId()
+      };
+      this.animals.next([...animals, newAnimal]);
+  }
+
+  updateAnimal(updatedAnimal: Animal) {
+    const animals = this.animals.value;
+    const index = animals.findIndex(a => a.id === updatedAnimal.id);
+
+    if (index !== -1) {
+      animals[ index] = updatedAnimal;
+      this.animals.next([...animals]);
+    }
+  }
+
+  deleteAnimal(id: number) {
+    const animals = this.animals.value;
+    this.animals.next(animals.filter(a => a.id !== id));
+  }
+
+  getAnimal(id: number): Animal | undefined {
+    return this.animals.value.find(a => a.id === id);
+  }
+
+  private generateId(): number {
+    return Math.floor(Math.random() * 1000);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { AnimalService } from '../animal.service';
+
+@Component({
+  selector: 'app-animal-list',
+  standalone: true,
+  imports: [ CommonModule],
+  styles: [`
+    .animal-list {
+      padding: 20px;
+    }
+
+    .animals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .animal-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+
+
+
+    .animal-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .animal-card h3 {
+      margin: 10px 0;
+      color: #2c5e1a;
+    }
+
+    .animal-card .birth-place {
+      color: #666;
+      margin: 5px 0;
+    }
+
+    .animal-card .age {
+      color: #e67e22;
+      font-size: 1.1em;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .actions button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-details {
+      background: #3498db;
+      color: white;
+    }
+
+    .btn-details {
+      background: #2980b9;
+    }
+
+    .btn-edit {
+      background: #f39c12;
+      color: black;
+    }
+
+    .btn-edit {
+      background: #e67e22;
+    }
+
+    .btn-delete {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .btn-delete {
+      background: #c0392b;
+    }
+  `],
+  template: `
+      <div class="animal-list">
+        <h2>Animal List</h2>
+
+        <div class="animals-grid">
+          <div class="animal-card" *ngFor="let animal of animals">
+            <img [src]="animal.photo" [alt]="animal.name">
+            <h3>{{ animal.name }}</h3>
+            <p class="birth-place"><strong>From:</strong> {{ animal.birthPlace }}</p>
+            <p class="age"><strong>Age:</strong> {{ animal.age }} years</p>
+            <div class="actions">
+              <button class="btn-details" (click)="viewDetails(animal.id)">View Details</button>
+              <button class="btn-edit" (click)="editAnimal(animal.id)">Edit</button>
+              <button class="btn-delete" (click)="deleteAnimal(animal.id)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+})
+export class AnimalListComponent implements OnInit {
+  animals: any[] = [];
+
+  constructor(
+    private animalService: AnimalService,
+    private router: Router
+  ) {}
+
+  ngOnInit() {
+    this.animalService.animals$.subscribe( animals => {
+      this.animals = animals;
+    });
+  }
+
+  viewDetails(animalId: number) {
+    this.router.navigate(['/animal', animalId]);
+  }
+
+  editAnimal(animalId: number) {
+    this.router.navigate(['/edit', animalId]);
+  }
+
+  deleteAnimal(animalId: number) {
+    if (confirm('Are you sure you want to delete this animal?')) {
+      this.animalService.deleteAnimal( animalId);
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AnimalService } from '../animal.service';
+
+@Component({
+  selector: 'app-animal-detail',
+  standalone: true,
+  imports: [ CommonModule],
+  styles: [`
+    .animal-detail {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .btn-back {
+      background: #6c757d;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+
+    }
+
+    .btn-back {
+      background: #5a6268;
+    }
+
+    .detail-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .detail-card img {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .detail-card h2 {
+      color: #2c5e1a;
+      margin-bottom: 10px;
+    }
+
+    .detail-card .birth-place {
+      color: #666;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .detail-card .age {
+      color: #e67e22;
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+
+    .btn-edit {
+      background: #f39c12;
+      color: black;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-edit {
+      background: #e67e22;
+    }
+
+    .not-found {
+      text-align: center;
+      padding: 40px;
+    }
+  `],
+   template: `
+      <div class="animal-detail">
+        <button class="btn-back" (click)="goBack()"> Back to Animals</button>
+
+        <div class="detail-card" *ngIf="animal">
+          <h2>{{ animal.name }}</h2>
+          <img [src]="animal.photo" [alt]="animal.name">
+          <p class="birth-place"><strong>Birth Place:</strong> {{ animal.birthPlace }}</p>
+          <p class="age"><strong>Age:</strong> {{ animal.age }} years</p>
+          <button class="btn-edit" (click)="editAnimal(animal.id)">Edit Animal</button>
+        </div>
+
+        <div *ngIf="!animal" class="not-found">
+          <p>Animal not found</p>
+          <button class="btn-back" (click)="goBack()">Back to Animals</button>
+        </div>
+      </div>
+    `,
+})
+export class AnimalDetailComponent implements OnInit {
+  animal: any;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private animalService: AnimalService
+  ) {}
+
+  ngOnInit() {
+    const animalId = Number(this.route.snapshot.paramMap.get('id'));
+    this.animal = this.animalService.getAnimal( animalId);
+  }
+
+  goBack() {
+    this.router.navigate(['/animals']);
+  }
+
+  editAnimal(animalId: number) {
+    this.router.navigate(['/edit', animalId]);
+  }
+}
+
+
+
+
+
+
+
+
+
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AnimalService } from '../animal.service';
+
+@Component({
+  selector: 'app-add-animal',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  styles: [`
+      .add-animal {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        font-family: Arial, sans-serif;
+      }
+
+      .add-animal h2 {
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 1.5rem;
+        color: #2c5e1a;
+      }
+
+      .btn-back {
+        background: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        cursor: pointer;
+        display: inline-block;
+
+      }
+
+      .btn-back {
+        background: #5a6268;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .form-group .input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
+        height: 100px;
+        resize: vertical;
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .btn-primary {
+        background: #2c5e1a;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .btn-primary {
+        background: #3e7c29;
+      }
+
+      .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .btn-cancel {
+        background: #5a6268;
+      }
+    `],
+  template: `
+    <div class="add-animal">
+      <button class="btn-back" (click)="goBack()"> Back to Animals</button>
+      <h2>Add New Animal</h2>
+
+      <form (submit)="addAnimal(); $event.preventDefault()">
+        <div class="form-group">
+          <label for="name">Animal Name</label>
+          <input class="input" type="text" id="name" [(ngModel)]="animal.name" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="photo">Photo URL</label>
+          <input class="input" type="text" id="photo" [(ngModel)]="animal.photo" name="photo" required>
+        </div>
+
+        <div class="form-group">
+          <label for="age">Age years</label>
+          <input class="input" type="number" id="age" [(ngModel)]="animal.age" name="age" required>
+        </div>
+
+        <div class="form-group">
+          <label for="birthPlace">Birth Place</label>
+          <input class="input" type="text" id="birthPlace" [(ngModel)]="animal.birthPlace" name="birthPlace" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Add Animal</button>
+          <button type="button" class="btn-cancel" (click)="goBack()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  `,
+})
+export class AddAnimalComponent {
+  animal = { name: '', photo: '', age: 0, birthPlace: '' };
+
+  constructor(private animalService: AnimalService, private router: Router) {}
+
+  addAnimal() {
+    if (this.animal.name && this.animal.photo && this.animal.birthPlace && this.animal.age >= 0) {
+      this.animalService.addAnimal( this.animal);
+      this.goBack();
+    }
+  }
+
+  goBack() {
+    this.router.navigate(['/animals']);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AnimalService } from '../animal.service';
+
+@Component({
+  selector: 'app-edit-animal',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  styles: [`
+      .edit-animal {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        font-family: Arial, sans-serif;
+      }
+
+      .edit-animal h2 {
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 1.5rem;
+        color: #2c5e1a;
+      }
+
+      .btn-back {
+        background: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        cursor: pointer;
+        display: inline-block;
+      }
+
+      .btn-back {
+        background: #5a6268;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .form-group .input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
+        height: 100px;
+        resize: vertical;
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .btn-primary {
+        background: #2c5e1a;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+
+      }
+
+      .btn-primary {
+        background: #3e7c29;
+      }
+
+      .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .btn-cancel{
+        background: #5a6268;
+      }
+    `],
+  template: `
+    <div class="edit-animal">
+      <button class="btn-back" (click)="goBack()"> Back to Animals</button>
+      <h2>Edit Animal</h2>
+
+      <form (submit)="updateAnimal(); $event.preventDefault()">
+        <div class="form-group">
+          <label for="name">Animal Name</label>
+          <input class="input" type="text" id="name" [(ngModel)]="animal.name" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="photo">Photo URL</label>
+          <input class="input" type="text" id="photo" [(ngModel)]="animal.photo" name="photo" required>
+        </div>
+
+        <div class="form-group">
+          <label for="age">Age years</label>
+          <input class="input" type="number" id="age" [(ngModel)]="animal.age" name="age" required>
+        </div>
+
+        <div class="form-group">
+          <label for="birthPlace">Birth Place</label>
+          <input class="input" type="text" id="birthPlace" [(ngModel)]="animal.birthPlace" name="birthPlace" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Update Animal</button>
+          <button type="button" class="btn-cancel" (click)="goBack()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  `,
+})
+export class EditAnimalComponent implements OnInit {
+  animal = { name: '', photo: '', age: 0, birthPlace: '' };
+  animalId: number | null = null;
+
+  constructor(
+    private animalService: AnimalService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if ( id) {
+      this.animalId = Number( id);
+      const existingAnimal = this.animalService.getAnimal( this.animalId);
+      if ( existingAnimal) {
+        this.animal = { ...existingAnimal };
+      }
+    }
+  }
+
+  updateAnimal() {
+    if (this.animalId && this.animal.name && this.animal.photo && this.animal.birthPlace && this.animal.age >= 0) {
+      const updatedAnimal = { ...this.animal, id: this.animalId };
+      this.animalService.updateAnimal( updatedAnimal);
+      this.goBack();
+    }
+  }
+
+  goBack() {
+    this.router.navigate(['/animals']);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+import { Routes } from '@angular/router';
+import { AnimalListComponent } from './animal-list/animal-list.component';
+import { AnimalDetailComponent } from './animal-detail/animal-detail.component';
+import { AddAnimalComponent } from './add-animal/add-animal.component';
+import { EditAnimalComponent } from './edit-animal/edit-animal.component';
+
+export const routes: Routes = [
+  { path: 'animals', component: AnimalListComponent },
+  { path: 'animal/:id', component: AnimalDetailComponent },
+  { path: 'add', component: AddAnimalComponent },
+  { path: 'edit/:id', component: EditAnimalComponent },
+  { path: '', redirectTo: '/animals', pathMatch: 'full' }
+];

@@ -761,7 +761,7 @@ public class HtmlGenerator {
                     }
                     if (line.contains("this.") && line.contains("{") && line.contains("id: this.")) {
 
-                        System.out.println(line);
+
                         line=line.replace("{", "{...");
                         line=line.replace("id: this.","id:");
                     }
