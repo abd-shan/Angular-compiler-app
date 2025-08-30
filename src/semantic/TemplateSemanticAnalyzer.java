@@ -75,6 +75,10 @@ public class TemplateSemanticAnalyzer {
         return sym.getName() != null && sym.getName().contains("[(ngModel)]");
     }
 
+    private boolean isSubmitting(Symbol sym) {
+        return sym.getName() != null && sym.getName().contains("[(ngModel)]");
+    }
+
     private boolean isPropertyBinding(Symbol sym) {
         String n = sym.getName();
         return n != null && n.matches(".*\\.\\[[^\\]]+\\]#\\d+.*");
