@@ -38,6 +38,9 @@ public final class ImportSymbolTable {
         }
     }
 
+    public List<ImportScope> getAllScopes() {
+        return Collections.unmodifiableList(allScopes);
+    }
 
     public ImportSymbol resolve(String name) {
 
@@ -54,9 +57,10 @@ public final class ImportSymbolTable {
         return null;
     }
 
-
-public void printTable() {
-        System.out.println("\n\u001B[1;36m==== Import Symbol Table ====\u001B[0m");
+    public void printTable() {
+        System.out.println("\n\u001B[1;36m╔══════════════════════════════════════════════════════════════╗\u001B[0m");
+        System.out.println("\u001B[1;36m║                     IMPORT SYMBOL TABLE                      ║\u001B[0m");
+        System.out.println("\u001B[1;36m╚══════════════════════════════════════════════════════════════╝\u001B[0m");
 
         if (allScopes.isEmpty()) {
             System.out.println("\u001B[33m(no imports)\u001B[0m");
@@ -69,17 +73,25 @@ public void printTable() {
                 .max()
                 .orElse(20);
 
-        maxScopeNameLength = Math.min(Math.max(maxScopeNameLength, 20), 40);
+        int maxSymbolLength = allScopes.stream()
+                .flatMap(scope -> scope.getAllSymbols().stream())
+                .mapToInt(sym -> sym.toString().length())
+                .max()
+                .orElse(50);
 
 
-        System.out.printf("\u001B[1;35m%-" + maxScopeNameLength + "s | %-50s | %s\u001B[0m%n",
-                "Scope", "Symbol", "Location");
+        maxScopeNameLength = Math.min(Math.max(maxScopeNameLength, 15), 30);
+        maxSymbolLength = Math.min(Math.max(maxSymbolLength, 30), 70);
 
 
-        String separatorLine = String.format("%-" + maxScopeNameLength + "s-+-%-50s-+-%s",
-                "-".repeat(maxScopeNameLength),
-                "-".repeat(50),
-                "-".repeat(15));
+        System.out.printf("\u001B[1;35m%-" + maxScopeNameLength + "s │ %-" + maxSymbolLength + "s │ %s\u001B[0m%n",
+                "SCOPE", "SYMBOL", "LOCATION");
+
+
+        String separatorLine = String.format("%s─┼─%s─┼─%s",
+                "─".repeat(maxScopeNameLength),
+                "─".repeat(maxSymbolLength),
+                "─".repeat(10));
         System.out.println(separatorLine);
 
 
@@ -88,23 +100,37 @@ public void printTable() {
             Collection<ImportSymbol> symbols = scope.getAllSymbols();
 
             if (symbols.isEmpty()) {
-                System.out.printf("\u001B[1;32m%-" + maxScopeNameLength + "s | %-50s | %s\u001B[0m%n",
+                System.out.printf("\u001B[1;32m%-" + maxScopeNameLength + "s │ %-" + maxSymbolLength + "s │ %s\u001B[0m%n",
                         scopeName, "(no imports)", "");
             } else {
                 boolean isFirstSymbol = true;
                 for (ImportSymbol sym : symbols) {
+                    String symbolStr = sym.toString();
+
+
+                    if (symbolStr.length() > maxSymbolLength) {
+                        symbolStr = symbolStr.substring(0, maxSymbolLength - 3) + "...";
+                    }
+
                     if (isFirstSymbol) {
-                        System.out.printf("\u001B[1;32m%-" + maxScopeNameLength + "s | \u001B[0m%-50s | [%d:%d]%n",
-                                scopeName, sym.toString(), sym.getLine(), sym.getColumn());
+                        System.out.printf("\u001B[1;32m%-" + maxScopeNameLength + "s │ \u001B[0m%-" + maxSymbolLength + "s │ [%d:%d]%n",
+                                scopeName, symbolStr, sym.getLine(), sym.getColumn());
                         isFirstSymbol = false;
                     } else {
-                        System.out.printf("%-" + maxScopeNameLength + "s | %-50s | [%d:%d]%n",
-                                "", sym.toString(), sym.getLine(), sym.getColumn());
+                        System.out.printf("%-" + maxScopeNameLength + "s │ %-" + maxSymbolLength + "s │ [%d:%d]%n",
+                                "", symbolStr, sym.getLine(), sym.getColumn());
                     }
                 }
                 System.out.println(separatorLine);
             }
         }
-        System.out.println("\u001B[1;36m============================================\u001B[0m\n");
+
+
+        int totalImports = allScopes.stream()
+                .mapToInt(scope -> scope.getAllSymbols().size())
+                .sum();
+
+        System.out.printf("\u001B[90mTotal: %d scope(s), %d import(s)\u001B[0m%n%n",
+                allScopes.size(), totalImports);
     }
 }

@@ -4,8 +4,10 @@ import java.util.*;
 
 public final class ImportScope {
     private final String scopeName;
-    // key -> name or alias  -> ImportSymbol
+    // خريطة للبحث السريع عن الرموز
     private final Map<String, ImportSymbol> symbols = new LinkedHashMap<>();
+    // قائمة لتخزين جميع الرموز المضافة (حتى المكررة)
+    private final List<ImportSymbol> allSymbols = new ArrayList<>();
 
     public ImportScope(String scopeName) {
         this.scopeName = scopeName;
@@ -16,6 +18,10 @@ public final class ImportScope {
     public void define(ImportSymbol sym) {
         if (sym == null) return;
 
+        // إضافة الرمز إلى قائمة جميع الرموز (حتى المكررة)
+        allSymbols.add(sym);
+
+        // إضافة الرمز إلى الخريطة للبحث السريع (تستبدل القديم إذا وجد)
         symbols.put(sym.getName(), sym);
 
         if (sym.getAlias() != null && !sym.getAlias().isEmpty()) {
@@ -28,8 +34,12 @@ public final class ImportScope {
     }
 
     public Collection<ImportSymbol> getAllSymbols() {
+        // إرجاع جميع الرموز المضافة (حتى المكررة)
+        return Collections.unmodifiableCollection(allSymbols);
+    }
 
-        Set<ImportSymbol> uniq = new LinkedHashSet<>(symbols.values());
-        return Collections.unmodifiableCollection(uniq);
+    // دالة جديدة للحصول على الرموز الفريدة فقط (للاستخدام في أماكن أخرى إذا لزم الأمر)
+    public Collection<ImportSymbol> getUniqueSymbols() {
+        return Collections.unmodifiableCollection(symbols.values());
     }
 }
