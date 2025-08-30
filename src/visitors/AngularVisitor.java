@@ -33,6 +33,8 @@ import ast.ts.types.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import symbolTable.Import.ImportSymbol;
+import symbolTable.Import.ImportSymbolTable;
 import symbolTable.SymbolTable;
 import symbolTable.RouterSymbolTable;
 
@@ -42,8 +44,13 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 	private final SymbolTable templateSymbolTable = new SymbolTable();
 	private int templateBindingCounter = 0;
 	private final RouterSymbolTable routerSymbolTable = new RouterSymbolTable();
+	private final ImportSymbolTable importSymbolTable = new ImportSymbolTable();
 
 	private final CharStream input;
+
+	public ImportSymbolTable getImportSymbolTable() {
+		return importSymbolTable;
+	}
 
 	public AngularVisitor(CharStream input) {
 		this.input = input;
@@ -79,11 +86,10 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		templateSymbolTable.enterScope("<templates>");
 
 		for (AngularParser.AngularFileContext fileCtx : ctx.angularFile()) {
-			AngularFile file = visitAngularFile(fileCtx); //    ComponentFile or StateFile
+			AngularFile file = visitAngularFile(fileCtx); //    ComponentFile or StateFile or RouteFile
 			app.addFile(file);
 		}
 
-		// keep ast.program/template root scopes as current
 		return app;
 	}
 
@@ -110,6 +116,13 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 
 		tsSymbolTable.enterScope("routeFile");
 
+		importSymbolTable.enterScope("RouteFile");
+
+		for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
+			visitImportStatement(impCtx);
+		}
+
+
 		// imports
 		for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
 			String importStmt = String.valueOf(visitImportStatement(impCtx));
@@ -127,6 +140,8 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 				routerSymbolTable.addRoute(elem.getPath(), elem.getComponent());
 			}
 		}
+
+		importSymbolTable.exitScope();
 
 		tsSymbolTable.exitScope();
 		return routeFile;
@@ -167,6 +182,11 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		tsSymbolTable.enterScope("stateFile");
 
 		// ==== import statements ====
+		importSymbolTable.enterScope("StateFile");
+
+		for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
+			visitImportStatement(impCtx);
+		}
 
 		for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
 			String importStmt = String.valueOf(visitImportStatement(impCtx)); //   String
@@ -224,6 +244,8 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 				tsSymbolTable.define(service.getClassName(), "class",line,col);
 			}
 		}
+
+		importSymbolTable.exitScope();
 
 		tsSymbolTable.exitScope();
 		return stateFile;
@@ -351,9 +373,18 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			selector = ctx.STRING().getText().replace("\"", "").replace("'", "");
 		}
 
+
+
 		boolean standalone = false;
 		if (ctx.STANDALONE() != null) {
 			standalone = ctx.TRUE() != null;
+		}
+
+		importSymbolTable.enterScope(selector);
+
+
+		for (AngularParser.ImportStatementContext impCtx : ctx.importStatement()) {
+			visitImportStatement(impCtx);
 		}
 
 		List<String> componentImports = new ArrayList<>();
@@ -395,7 +426,9 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 		}
 
 		templateSymbolTable.exitScope();
+		importSymbolTable.exitScope();
 		tsSymbolTable.exitScope();
+
 		return new ComponentFile(className, selector, standalone, componentImports,
 				template, styles, providersOption, tsBlock);
 	}
@@ -481,10 +514,43 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 	@Override
 	public ImportStatement visitImportStatement(AngularParser.ImportStatementContext ctx) {
 		ImportClause clause = (ImportClause) visitImportClause(ctx.importClause());
-		String modulePath = ctx.STRING().getText();
+		String modulePath = ctx.STRING().getText().replace("\"", "").replace("'", "");
+		int line = ctx.start.getLine();
+		int col = ctx.start.getCharPositionInLine();
+
+		if (clause instanceof NamedImportsClause) {
+			NamedImportsClause namedClause = (NamedImportsClause) clause;
+			for (ImportSpecifier spec : namedClause.getNamedImports().getSpecifiers()) {
+				ImportSymbol sym = new ImportSymbol(spec.getImported(), spec.getAlias(), modulePath, line, col);
+				importSymbolTable.define(sym);
+
+			}
+		} else if (clause instanceof DefaultImportClause) {
+			DefaultImportClause defaultClause = (DefaultImportClause) clause;
+			if (defaultClause.getDefaultImport() != null) {
+				ImportSymbol sym = new ImportSymbol(defaultClause.getDefaultImport(), null, modulePath, line, col);
+				importSymbolTable.define(sym);
+				System.out.println("[DEBUG] Defined default import: " + sym);
+			}
+			if (defaultClause.getNamedImports() != null) {
+				for (ImportSpecifier spec : defaultClause.getNamedImports().getSpecifiers()) {
+					ImportSymbol sym = new ImportSymbol(spec.getImported(), spec.getAlias(), modulePath, line, col);
+					importSymbolTable.define(sym);
+					System.out.println("[DEBUG] Defined named import (with defaultClause): " + sym);
+				}
+			}
+		} else if (clause instanceof NamespaceImportClause) {
+			NamespaceImportClause namespaceClause = (NamespaceImportClause) clause;
+
+			ImportSymbol sym = new ImportSymbol(namespaceClause.getNamespaceImport().getNamespaceName(), null, modulePath, line, col);
+			importSymbolTable.define(sym);
+			System.out.println("[DEBUG] Defined namespace import: " + sym);
+		}
 
 		return new ImportStatement(clause, modulePath);
 	}
+
+
 
 	@Override
 	public ImportClause visitImportClause(AngularParser.ImportClauseContext ctx) {
@@ -1780,10 +1846,10 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
 			AngularParser parser = new AngularParser(tokens);
 
-			// نستخدم rule الـ ast.html مباشرة (تأكد أن اسم القاعدة صحيح في الـ parser)
+
 			AngularParser.HtmlContext htmlCtx = parser.html();
 
-			// نعيد زيارة هذا السياق بواسطة نفس الـ visitor (this)
+
 			HtmlDocument doc = (HtmlDocument) visitHtml(htmlCtx);
 			return doc;
 		} catch (Exception e) {
@@ -1842,4 +1908,5 @@ public class AngularVisitor extends AngularParserBaseVisitor<Object> {
 			templateSymbolTable.define(name, type != null ? type : "",line,col);
 		}
 	}
+
 }

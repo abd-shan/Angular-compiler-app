@@ -37,6 +37,7 @@ public class Main {
 		var tsTable = visitor.getTsSymbolTable();
 		var templateTable = visitor.getTemplateSymbolTable();
 		var routerTable = visitor.getRouterSymbolTable();
+		var importTable = visitor.getImportSymbolTable();
 
 		// run semantic analyzer
 		TemplateSemanticAnalyzer tAnalyzer = new TemplateSemanticAnalyzer(tsTable, templateTable);
@@ -65,6 +66,7 @@ public class Main {
 
 		System.out.println("\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<< ROUTER SYMBOL TABLE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
 		System.out.println(routerTable);
+		importTable.printTable();
 
 
 		HtmlGenerator htmlGenerator=new HtmlGenerator(program,routerTable);
