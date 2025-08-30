@@ -7,9 +7,12 @@ import ast.html.element.ElementNode;
 import ast.html.element.InterpolationNode;
 import ast.html.element.TextNode;
 import ast.html.attribute.*;
+import ast.program.StateFile;
+import ast.state.StateServiceClass;
 import ast.ts.expressions.*;
 import ast.ts.statements.DeclareAndAssignAttribute;
 import ast.ts.statements.Method;
+import ast.ts.statements.MethodParam;
 import ast.ts.statements.TsStatement;
 import ast.ts.stmt.ExprStatement;
 import symbolTable.RouterSymbolTable;
@@ -27,11 +30,13 @@ public class HtmlGenerator {
     Map<String, List<Map<String, TsExpression>>> data;
     AngularApp angularApp;
     RouterSymbolTable routerTable;
+    StateServiceClass serviceClass;
 
     public HtmlGenerator(AngularApp angularApp, RouterSymbolTable routerTable) {
         this.angularApp = angularApp;
         this.routerTable = routerTable;
         data = extractObjectArrays();
+        serviceClass = angularApp.getStateFiles().getFirst().getServiceClasses().getFirst();
 
         List<ComponentFile> files = angularApp.getComponentFiles();
         ensureOutputDir();
@@ -103,10 +108,38 @@ public class HtmlGenerator {
 //        String expression = ngIfAttribute.getExpression();
 //        System.out.println("expression "+expression);
 
+
+//         serviceClass = stateFile.getServiceClasses().getFirst();
+//        serviceClass.getClassName();
+//        System.out.println("serviceClass.getClassName() " + serviceClass.getClassName());
+//        serviceClass.getTsCode();
+//        System.out.println("serviceClass.getTsCode() " + serviceClass.getTsCode());
+
+        createJsFile();
+
         for (ComponentFile file : files) {
             createHtmlTemplate(file);
         }
 
+    }
+
+
+    private void createJsFile(){
+        File htmlFile = new File(OUTPUT_DIR, serviceClass.getClassName() + ".js");
+
+        try (FileWriter writer = new FileWriter(htmlFile, false)) {
+
+            Map<String, List<Map<String, TsExpression>>> objects = extractObjectArrays();
+            String jsFunctions = generateGetFunctions(objects);
+            writer.write(jsFunctions);
+
+            // Generate functions from service class methods that don't contain 'this'
+            String serviceFunctions = generateServiceFunctions();
+            writer.write(serviceFunctions);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
@@ -143,6 +176,7 @@ public class HtmlGenerator {
             }
 
             writer.write("  <!-- " + className + " template -->\n");
+            writer.write("<script src=\""+serviceClass.getClassName()+".js\"></script>\n" );
             writer.write("<script>\n");
 
             // ✅ NEW: Add URL param parsing only for /:id routes
@@ -153,8 +187,8 @@ public class HtmlGenerator {
 
 // ✅ Always generate get functions
             Map<String, List<Map<String, TsExpression>>> objects = extractObjectArrays();
-            String jsFunctions = generateGetFunctions(objects);
-            writer.write(jsFunctions);
+//            String jsFunctions = generateGetFunctions(objects);
+//            writer.write(jsFunctions);
 
 // ✅ Generate render functions if needed
             if (!ngForObjects.isEmpty()) {
@@ -173,7 +207,7 @@ public class HtmlGenerator {
             writer.write(routingFunctions);
 
 
-            String ngifElements = generateNgIfFunctions(ngIfElements);
+            String ngifElements = generateNgIfFunctions();
             writer.write(ngifElements);
 
 
@@ -256,6 +290,8 @@ public class HtmlGenerator {
 
             html.append(">");
 
+            ngForElements = new ArrayList<>();
+            ngIfElements = new ArrayList<>();
             for (Node child : element.getChildren()) {
                 if (child instanceof ElementNode e) {
                     if (e.getAttributes().stream().anyMatch(a -> a instanceof NgForAttribute)) {
@@ -275,81 +311,6 @@ public class HtmlGenerator {
         }
         return "";
     }
-
-
-/*
-    private String generateHtmlFromNode(Node node, Map<String, TsExpression> attributes) {
-        if (node instanceof TextNode textNode) {
-            return textNode.getText();
-        } else if (node instanceof InterpolationNode interpolation) {
-            String exprName = interpolation.getExpression();
-            TsExpression value = attributes.get(exprName);
-            return value != null ? value.toString() : "{{" + exprName + "}}";
-        } else if (node instanceof ElementNode element) {
-            StringBuilder html = new StringBuilder();
-
-            boolean childHasNgFor = element.getChildren().stream()
-                    .anyMatch(c -> c instanceof ElementNode e &&
-                            e.getAttributes().stream().anyMatch(a -> a instanceof NgForAttribute));
-
-            boolean childHasNgIf = element.getChildren().stream()
-                    .anyMatch(c -> c instanceof ElementNode e &&
-                            e.getAttributes().stream().anyMatch(a -> a instanceof NgIfAttribute));
-
-            html.append("<").append(element.getTagName());
-
-            for (HtmlAttribute attr : element.getAttributes()) {
-                if (attr instanceof StandardAttribute standard) {
-                    String name = standard.getName();
-                    String value = standard.getValue();
-
-                    if ("routerLink".equals(name)) {
-                        String route = value.startsWith("/") ? value.substring(1) : value;
-                        Set<String> components = routerTable.getRoutes().get(route);
-                        if (components != null && !components.isEmpty()) {
-                            String component = components.iterator().next();
-                            html.append(" href=\"").append(component).append(".html\"");
-                        }
-                    } else if ("routerLinkActive".equals(name)) {
-                        continue; // skip
-                    } else {
-                        html.append(" ").append(name)
-                                .append("=\"").append(value).append("\"");
-                    }
-                }
-            }
-
-            if (childHasNgFor) {
-                ngforParentId = "ngfor-parent-" + new Random().nextInt(500);
-                html.append(" id=\"").append(ngforParentId).append("\"");
-            }
-            if (childHasNgIf) {
-                ngifParentId = "ngif-parent-" + new Random().nextInt(500);
-                html.append(" id=\"").append(ngifParentId).append("\"");
-            }
-
-            html.append(">");
-
-            for (Node child : element.getChildren()) {
-                if (child instanceof ElementNode e) {
-                    if (e.getAttributes().stream().anyMatch(a -> a instanceof NgForAttribute)) {
-                        ngForElements.add(e);
-                        continue; // skip ngFor element
-                    }
-                    if (e.getAttributes().stream().anyMatch(a -> a instanceof NgIfAttribute)) {
-                        ngIfElements.add(e);
-                        continue; // skip ngIf element
-                    }
-                }
-                html.append(generateHtmlFromNode(child, attributes));
-            }
-
-            html.append("</").append(element.getTagName()).append(">");
-            return html.toString();
-        }
-        return "";
-    }
-*/
 
 
     String nameOfGot;
@@ -519,7 +480,7 @@ public class HtmlGenerator {
 
     Set<String> ngifIds = new HashSet<>();
 
-    private String generateNgIfFunctions(List<ElementNode> ngIfElements) {
+    private String generateNgIfFunctions() {
         StringBuilder js = new StringBuilder();
 
         for (ElementNode ngIfElement : ngIfElements) {
@@ -695,36 +656,47 @@ public class HtmlGenerator {
         return result;
     }
 
-    private String generateNgIfScript(List<ElementNode> ngIfElements, String ngifParentId) {
-        if (ngIfElements.isEmpty()) return ""; // No ngIf elements, nothing to generate
-
+    private String generateServiceFunctions() {
         StringBuilder js = new StringBuilder();
 
-        for (ElementNode ngIfElement : ngIfElements) {
-            NgIfAttribute ngIf = (NgIfAttribute) ngIfElement.getAttributes().stream()
-                    .filter(a -> a instanceof NgIfAttribute)
-                    .map(a -> (NgIfAttribute) a)
-                    .findFirst()
-                    .orElse(null);
+        List<TsStatement> statements = serviceClass.getTsCode().getStatements();
 
-            if (ngIf == null) continue;
+        for (TsStatement stmt : statements) {
+            if (stmt instanceof Method method) {
+                // Check if method body contains 'this'
+                String methodBody = method.getBody().toString();
+                if (!methodBody.contains("this")) {
+                    // Generate JavaScript function
+                    js.append("function ").append(method.getName()).append("(");
 
-            String condition = ngIf.getExpression().trim(); // e.g., "product"
-            String varName = condition.replace("!", "").trim(); // remove possible negation
+                    // Add parameters
+                    List<MethodParam> params = method.getParameters();
+                    for (int i = 0; i < params.size(); i++) {
+                        MethodParam param = params.get(i);
+                        js.append(param.getName());
+                        if (i < params.size() - 1) {
+                            js.append(", ");
+                        }
+                    }
 
-            // Generate JS
-            js.append("const ").append(varName).append(" = get")
-                    .append(capitalize(varName)).append("(id);\n");
-            js.append("const container = document.getElementById(\"").append(ngifParentId).append("\");\n");
-            js.append("if (").append(varName).append(") {\n");
-            js.append("  container.innerHTML = `");
+                    js.append(") {\n");
 
-            // Generate inner HTML of the ngIf element using your existing method
-            String innerHtml = generateInnerHtmlForNgFor(ngIfElement, varName);
-            js.append(innerHtml.replace("`", "\\`")); // escape backticks
+                    // Add method body - convert TypeScript to JavaScript
+                    // The body.toString() includes the statements, we need to clean it up
+                    String body = methodBody;
+                    // Remove any extra formatting and ensure proper indentation
+                    body = body.trim();
+                    // Add proper indentation for the body content
+                    String[] lines = body.split("\n");
+                    for (String line : lines) {
+                        if (!line.trim().isEmpty()) {
+                            js.append("  ").append(line.trim()).append("\n");
+                        }
+                    }
 
-            js.append("`;\n");
-            js.append("}\n\n");
+                    js.append("}\n\n");
+                }
+            }
         }
 
         return js.toString();
