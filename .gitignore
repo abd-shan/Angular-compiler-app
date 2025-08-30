@@ -4,6 +4,7 @@ src/gen/
 out/
 # Compiled class file
 *.class
+*.tokens
 
 # Log file
 *.log

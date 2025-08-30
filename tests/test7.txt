@@ -113,27 +113,28 @@ export class ProductService {
   products$ = this.products.asObservable();
 
   addProduct(product: Omit<Product, 'id'>) {
-    const currentProducts = this.products.value;
-    const newProduct = {
-      ...product,
-      id: this.generateId()
-    };
-    this.producjjjts.next([...currentProducts, newProduct]);
+      const products = this.products.value;
+      const newProduct = {
+        ...product,
+        id: this.generateId()
+      };
+      this.products.next([...products, newProduct]);
   }
 
+
   updateProduct(updatedProduct: Product) {
-    const currentProducts = this.products.value;
-    const index = currentProducts.findIndex(p => p.id === updatedProduct.id);
+    const products = this.products.value;
+    const index = products.findIndex(p => p.id === updatedProduct.id);
 
     if (index !== -1) {
-      currentProducts[ index] = updatedProduct;
-      this.products.next([...currentProducts]);
+      products[ index] = updatedProduct;
+      this.products.next([...products]);
     }
   }
 
   deleteProduct(id: number) {
-    const currentProducts = this.products.value;
-    this.products.next(currentProducts.filter(p => p.id !== id));
+    const products = this.products.value;
+    this.products.next(products.filter(p => p.id !== id));
   }
 
   getProduct(id: number): Product | undefined {
