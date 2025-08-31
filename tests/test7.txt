@@ -360,7 +360,7 @@ import { ProductService } from '../product.service';
       <div class="product-detail">
         <button class="btn-back" (click)="goBack()"> Back to Products</button>
 
-        <div class="detail-card" *ngIf=" ">
+        <div class="detail-card" *ngIf="product">
           <h2>{{ product.name }}</h2>
           <img [src]="product.image" [alt]="product.name">
           <p class="description">{{ product.description }}</p>
