@@ -57,6 +57,13 @@ public final class ImportSymbolTable {
         return null;
     }
 
+    public Optional<ImportScope> getScopeByName(String scopeName) {
+        return allScopes.stream()
+                .filter(scope -> scope.getScopeName().equals(scopeName))
+                .findFirst();
+    }
+
+
     public void printTable() {
         System.out.println("\n\u001B[1;36m╔══════════════════════════════════════════════════════════════╗\u001B[0m");
         System.out.println("\u001B[1;36m║                     IMPORT SYMBOL TABLE                      ║\u001B[0m");

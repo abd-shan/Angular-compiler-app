@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import ast.program.AngularApp;
+import semantic.RouteSemanticChecker;
 import semantic.TemplateSemanticAnalyzer;
 import semantic.TypeScriptSemanticAnalyzer;
 import semantic.ImportSemanticAnalyzer;
@@ -51,10 +52,15 @@ public class Main {
 		ImportSemanticAnalyzer importAnalyzer = new ImportSemanticAnalyzer(importTable);
 		importAnalyzer.analyze();
 
-		// merge errors from all analyzers
+		RouteSemanticChecker r = new RouteSemanticChecker(routerTable,importTable);
+		r.analyze();
+
+
+
 		List<String> errors = new java.util.ArrayList<>(tsAnalyzer.getErrors());
 		errors.addAll(tAnalyzer.getErrors());
 		errors.addAll(importAnalyzer.getErrors());
+		errors.addAll(r.getErrors());
 
 
 
@@ -73,6 +79,7 @@ public class Main {
 			System.out.println(routerTable);
 
 			importTable.printTable();
+
 
 
 			HtmlGenerator htmlGenerator = new HtmlGenerator(program, routerTable);

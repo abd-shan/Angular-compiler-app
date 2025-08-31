@@ -66,10 +66,10 @@ public class TemplateSemanticAnalyzer {
         return findScopeByName(tsRoot, componentName);
     }
 
-    // Angular template symbol type detection
-    private boolean isClickEvent(Symbol sym) {
-        return sym.getName() != null && sym.getName().contains("(click)");
+    private boolean isEventBinding(Symbol sym) {
+        return sym.getName() != null && (sym.getName().trim().contains("(submit)") ||sym.getName().trim().contains("(click)") ) ;
     }
+
 
     private boolean isNgModelBinding(Symbol sym) {
         return sym.getName() != null && sym.getName().contains("[(ngModel)]");
@@ -116,22 +116,31 @@ public class TemplateSemanticAnalyzer {
         return (m.find()) ? m.group(1) : null;
     }
 
-    // Extract ngIf/ngFor directive expression
+
     private String extractDirectiveExpression(Symbol sym) {
         if (sym.getName() == null) return null;
 
-        Matcher matcher = Pattern.compile("\\*ng(If|For)\\s*=\\s*[\"']([^\"']+)[\"']").matcher(sym.getName());
+
+        Matcher matcher = Pattern.compile("\\*ng(If|For)\\s*=\\s*[\"']([^\"']*)[\"']").matcher(sym.getName());
         if (matcher.find()) {
-            return matcher.group(2);
+            String expr = matcher.group(2).trim();
+            return expr.isEmpty() ? null : expr;
         }
+
 
         String typeExpression = sym.getType();
         if (typeExpression != null && !typeExpression.trim().isEmpty()) {
-            return typeExpression;
+            Matcher typeMatcher = Pattern.compile("\\*ng(If|For)\\s*=\\s*[\"']([^\"']*)[\"']").matcher(typeExpression);
+            if (typeMatcher.find()) {
+                String expr = typeMatcher.group(2).trim();
+                return expr.isEmpty() ? null : expr;
+            }
         }
 
         return null;
     }
+
+
 
     private List<String> extractVariableFromNgIfExpression(String expr) {
         List<String> vars = new ArrayList<>();
@@ -193,7 +202,7 @@ public class TemplateSemanticAnalyzer {
             if (tsScope == null) continue;
 
             for (Symbol sym : tplCompScope.getSymbols().values()) {
-                if (!isClickEvent(sym)) continue;
+                if (!isEventBinding(sym)) continue;
 
                 String callExpr = Optional.ofNullable(extractRhsExpression(sym)).orElse(sym.getName());
                 String method = extractMethodName(callExpr);
@@ -253,16 +262,29 @@ public class TemplateSemanticAnalyzer {
                 if (!isNgIf(sym)) continue;
 
                 String expr = extractDirectiveExpression(sym);
-
                 if (expr == null || expr.isBlank()) {
                     errors.add(formatError(componentName, sym, "*ngIf directive is empty."));
                     continue;
                 }
 
+
+
+
+
+
+
                 List<String> variables = extractVariableFromNgIfExpression(expr);
-                if (variables.isEmpty()) continue;
 
                 for (String variable : variables) {
+
+//                    System.out.println(variable);
+                    System.out.println(variable.trim());
+                    if (variable.trim().isEmpty() || variable.isBlank()) {
+                        errors.add(formatError(componentName, sym, "*ngIf directive is empty."));
+                        continue;
+                    }
+
+
                     if (tsScope.resolve(variable) == null) {
                         errors.add(formatError(componentName, sym,
                                 "Undefined variable '" + variable + "' used in *ngIf expression: " + expr));
@@ -315,7 +337,7 @@ public class TemplateSemanticAnalyzer {
             }
 
             for (Symbol sym : tplCompScope.getSymbols().values()) {
-                if (!isClickEvent(sym)) continue;
+                if (!isEventBinding(sym)) continue;
 
                 String callExpr = Optional.ofNullable(extractRhsExpression(sym)).orElse(sym.getName());
                 String method = extractMethodName(callExpr);
@@ -326,11 +348,15 @@ public class TemplateSemanticAnalyzer {
                     String base = extractBaseIdentifier(param);
                     if (base == null || localVars.contains(base)) continue;
 
+
+                    if ("$event".equals(base)) continue;
+
                     if (tsScope.resolve(base) == null) {
                         errors.add(formatError(componentName, sym,
                                 "Variable '" + base + "' passed to method '" + method + "' is not defined."));
                     }
                 }
+
             }
         }
     }
