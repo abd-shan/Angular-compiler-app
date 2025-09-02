@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProductDetailComponent Component</title>
+  <style>
+.product-detail {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .btn-back {
+      background: #6c757d;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .detail-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .detail-card img {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .detail-card h2 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .detail-card .description {
+      color: #666;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .detail-card .price {
+      color: #28a745;
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+
+    .btn-edit {
+      background: #ffc107;
+      color: black;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .not-found {
+      text-align: center;
+      padding: 40px;
+    }
+  </style>
+</head>
+<body>
+<div class="product-detail" id="ngif-parent-75"><button class="btn-back" onclick="goBack()">Back to Products</button></div>
+  <!-- ProductDetailComponent template -->
+<script src="ProductService.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const id = Number(params.get("id"));
+
+function goBack() {
+  window.location.href = "ProductListComponent.html";
+}
+
+function editProduct(productId) {
+  window.location.href = "EditProductComponent.html?id=" + productId;
+}
+
+const product = getProduct(id);
+  const parent = document.getElementById("ngif-parent-75");
+  parent.innerHTML = "";
+  if (product) {
+    parent.innerHTML = `<div class="detail-card"><h2>${product.name}</h2><img src="${product.image}" alt="${product.name}"></img><p class="description">${product.description}</p><p class="price"><strong>Price :${product.price}SAR</strong></p><button class="btn-edit" onclick="editProduct(${product.id})">Edit Product</button></div>`;
+  }
+  if (!product) {
+    parent.innerHTML = `<div class="not-found"><p>Product not found</p><button class="btn-back" onclick="goBack()">Back to Products</button></div>`;
+  }
+</script>
+</body>
+</html>

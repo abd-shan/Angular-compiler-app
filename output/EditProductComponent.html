@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EditProductComponent Component</title>
+  <style>
+.add-product {
+          max-width: 600px;
+          margin: auto;
+          padding: 20px;
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+          font-family: Arial, sans-serif;
+        }
+
+        .edit-product h2 {
+          margin-bottom: 20px;
+          text-align: center;
+          font-size: 1.5rem;
+          color: #333;
+        }
+
+        .btn-back {
+          background: #6c757d;
+          color: white;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          margin-bottom: 20px;
+          cursor: pointer;
+          display: inline-block;
+        }
+
+        .form-group {
+          margin-bottom: 20px;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: bold;
+          color: #333;
+        }
+
+
+        .form-group .input {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+
+          }
+        .form-group textarea {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+
+        }
+
+
+       .form-group textarea {
+          height: 100px;
+          resize: vertical;
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-top: 20px;
+        }
+
+        .btn-primary {
+          background: #007bff;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+
+        }
+
+
+
+        .btn-cancel {
+          background: #6c757d;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+
+        }
+  </style>
+</head>
+<body>
+<div class="add-product"><button class="btn-back" onclick="goBack()">Back to Products</button><h2>Edit Product</h2><form onsubmit="updateProduct(); $event.preventDefault()"><div class="form-group"><label for="name">Product Name</label><input class="input" type="text" id="name" name="name"></input></div><div class="form-group"><label for="description">Description</label><textarea id="description" name="description"></textarea></div><div class="form-group"><label for="image">Image URL</label><input class="input" type="text" id="image" name="image"></input></div><div class="form-group"><label for="price">Price SAR</label><input type="number" id="price" name="price"></input></div><div class="form-actions"><button type="submit" class="btn-primary">Update Product</button><button type="button" class="btn-cancel" onclick="goBack()">Cancel</button></div></form></div>
+  <!-- EditProductComponent template -->
+<script src="ProductService.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const id = Number(params.get("id"));
+
+function goBack() {
+  window.location.href = "ProductListComponent.html";
+}
+
+</script>
+</body>
+</html>
