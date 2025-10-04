@@ -17,7 +17,6 @@ We take security vulnerabilities seriously. If you discover a security vulnerabi
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report security vulnerabilities by emailing us at: [security@yourdomain.com]
 
 ### What to Include
 
@@ -108,19 +107,9 @@ We follow responsible disclosure practices:
 3. **Coordination**: We coordinate with reporters on disclosure timing
 4. **Public Disclosure**: Issues are disclosed publicly after fixes are available
 
-### Security Contact
-
-For security-related questions or concerns:
-
-- **Email**: [security@yourdomain.com]
-- **Response Time**: Within 48 hours
-- **PGP Key**: [Include your PGP key if available]
 
 ### Acknowledgments
 
 We thank security researchers who responsibly disclose vulnerabilities. Contributors who report valid security issues will be acknowledged in our security advisories (with permission).
 
 ---
-
-**Last Updated**: [Current Date]
-**Next Review**: [Date for next security policy review]
