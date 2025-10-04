@@ -5,6 +5,7 @@ import java.util.Objects;
 public class CssOption {
     private final StylesOption option;
 
+
     public CssOption(StylesOption option) {
         this.option = Objects.requireNonNull(option, "option is null");
     }

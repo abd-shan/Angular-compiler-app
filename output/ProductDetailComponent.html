@@ -71,7 +71,7 @@
   </style>
 </head>
 <body>
-<div class="product-detail" id="ngif-parent-75"><button class="btn-back" onclick="goBack()">Back to Products</button></div>
+<div class="product-detail" id="ngif-parent-360"><button class="btn-back" onclick="goBack()">Back to Products</button></div>
   <!-- ProductDetailComponent template -->
 <script src="ProductService.js"></script>
 <script>
@@ -87,7 +87,7 @@ function editProduct(productId) {
 }
 
 const product = getProduct(id);
-  const parent = document.getElementById("ngif-parent-75");
+  const parent = document.getElementById("ngif-parent-360");
   parent.innerHTML = "";
   if (product) {
     parent.innerHTML = `<div class="detail-card"><h2>${product.name}</h2><img src="${product.image}" alt="${product.name}"></img><p class="description">${product.description}</p><p class="price"><strong>Price :${product.price}SAR</strong></p><button class="btn-edit" onclick="editProduct(${product.id})">Edit Product</button></div>`;

@@ -4,6 +4,7 @@ lexer grammar AngularLexer;
 package gen;
 }
 
+
 AT_COMPONENT: '@Component';
 STANDALONE: 'standalone';
 IMPORTS: 'imports';
@@ -64,6 +65,7 @@ PUBLIC:'public';
 PRIVATE:'private';
 PROTECTED:'protected';
 READONLY: 'readonly';
+
 
 
 

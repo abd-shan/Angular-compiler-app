@@ -4,6 +4,7 @@ Thank you for your interest in contributing to the Angular Compiler Application!
 
 ## 🚀 Getting Started
 
+
 ### Prerequisites
 - Java 11 or higher
 - ANTLR4 runtime

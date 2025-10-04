@@ -260,6 +260,7 @@ genericTypeParam
   | STRING
   ;
 
+
 arrayType: ((type|ID) LBRACKET RBRACKET);
 
 
