@@ -221,8 +221,8 @@ When suggesting new features:
 ### Useful Commands
 ```bash
 # Generate ANTLR files (if grammar changes)
-java -cp lib/antlr-4.13.0-complete.jar org.antlr.v4.Tool antlr/AngularLexer.g4
-java -cp lib/antlr-4.13.0-complete.jar org.antlr.v4.Tool antlr/AngularParser.g4
+java -cp lib/antlr_4.13.0_complete.jar org.antlr.v4.Tool antlr/AngularLexer.g4
+java -cp lib/antlr_4.13.0_complete.jar org.antlr.v4.Tool antlr/AngularParser.g4
 
 # Run specific test
 java -cp "lib/antlr-4.13.0-complete.jar:.:src" Main tests/test-name.txt

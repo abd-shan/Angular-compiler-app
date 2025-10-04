@@ -9,6 +9,7 @@ We actively maintain and provide security updates for the following versions:
 | 1.0.x   | :white_check_mark: |
 | < 1.0   | :x:                |
 
+
 ## Reporting a Vulnerability
 
 We take security vulnerabilities seriously. If you discover a security vulnerability in the Angular Compiler Application, please report it to us as described below.
